@@ -1,4 +1,4 @@
-import downloader
+import parser
 
 def main(args):
     pass

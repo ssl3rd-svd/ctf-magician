@@ -1,1 +1,0 @@
-from .ctfd import CTFdDownloader

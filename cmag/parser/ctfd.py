@@ -6,21 +6,21 @@ import bs4
 import pyjson5
 import requests
 
-class CTFdDownloaderException(Exception):
+class CTFdParserException(Exception):
     pass
 
-class CTFdRequestException(CTFdDownloaderException):
+class CTFdRequestException(CTFdParserException):
     pass
 
-class CTFdNonceNotFound(CTFdDownloaderException):
+class CTFdNonceNotFound(CTFdParserException):
     pass
 
-class CTFdNotLoggedIn(CTFdDownloaderException):
+class CTFdNotLoggedIn(CTFdParserException):
     pass
 
-class CTFdDownloader:
+class CTFdParser:
     
-    def __init__(self, baseurl, useragent='scan-the-flag'):
+    def __init__(self, baseurl, useragent='ctf-magician'):
         
         self.loggedin = False
         self.baseurl = baseurl
@@ -66,7 +66,7 @@ class CTFdDownloader:
     def login(self, username, password):
 
         response = self.ctfd_get('/login')
-        nonce = CTFdDownloader.parse_nonce_from_html(response.text)
+        nonce = CTFdParser.parse_nonce_from_html(response.text)
         if not nonce:
             raise CTFdNonceNotFound
 

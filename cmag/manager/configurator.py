@@ -1,0 +1,2 @@
+class CMagConfigurator:
+    pass
