@@ -1,142 +1,147 @@
-import json
-import os
-import sys
-import hashlib
-import time
-import shutil
-import importlib.util
+from json import load, dump
+from typing import Any, Dict, List
+from pathlib import Path
 
-from cmag.utils import *
-from cmag.manager.challenge import CMagChallenge
+from cmag.modules.Loader import CMagModuleLoader
+
+from .Challenge import CMagChallenge, CMagChallengeImpl
+
+from .ProjectDatabase import (
+    CMagProjectDatabase,
+    SqliteDatabase,
+    CMagProjDatabaseProxy,
+    CMagProjChallenge,
+    CMagProjFile
+)
 
 class CMagProjectImpl:
     
-    def __init__(self, projdir):
+    def __init__(self, project_root: Path, *args, **kwargs):
         
-        # Load directory informations.
-        self._dirname   = os.path.dirname(projdir)
-        self._dir       = projdir
-        self._makepath  = makepath_factory(projdir)
-
-        # Load configurations.
-        config_path = self.makepath('/config.json')
-        if not os.path.isfile(config_path):
-            raise Exception
-
-        with open(config_path, 'r') as f:
-            self._config = json.loads(f.read())
-
-        # Load challenges
-        chals_path = self.makepath('/chals/info.json')
-        if not os.path.isfile(chals_path):
-            raise Exception
-
-        with open(chals_path, 'r') as f:
-            chals = json.loads(f.read())
-
-        self._chals = []
-        for dirname in chals:
-
-            chaldir = self.makepath(f'/chals/{dirname}')
-            if not os.path.isdir(chaldir):
-                raise Exception
-
-            chalobj = CMagChallenge.load(chaldir, self)
-            self._chals.append(chalobj)
-
-        # Load modules
-        self._modules = []
-        for name, path in self.config['modules'].itmes():
-            spec = importlib.util.spec_from_file_location(name, path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            if hasattr(module, 'init'):
-                self._modules.extend(module.init(self))
-
-    def __del__(self):
-        self.save()
-
-    def save(self):
+        self._dir = project_root
+        self._scan_queries = {}
         
-        # Save configurations
-        config_path = self.makepath('/config.json')
-        with open(config_path, 'w') as f:
-            f.write(json.dumps(self.config))
-        
-        # Save challenges
-        chals = []
-        for chal in self.chals:
-            chal.save()
-            chals.append(chal.dirname)
+        # check structures
+        for dirpath in [self.dir, self.files_dir]:
+            if not dirpath.is_dir():
+                raise FileNotFoundError(f"{dirpath} not found.")
+        for filepath in [self.db_path, self.cfg_path]:
+            if not filepath.is_file():
+                raise FileNotFoundError(f"{dirpath} not found.")
 
-        chals_path = self.makepath('/chals/info.json')
-        with open(chals_path, 'w') as f:
-            f.write(json.dumps(chals))
+        # get config
+        if 'config' not in kwargs:
+            with self.cfg_path.open('r') as file:
+                config = load(file)
+        else:
+            config = kwargs['config']
 
-    def add_chal(self, name, category, files=[]):
+        self._config = config
 
-        dirname = hashlib.md5(f"{name}.{time.time()}".encode()).hexdigest()
+        # load modules
+        if 'modules' in config:
+            self._mods = CMagModuleLoader(self, config['modules'])
+        else:
+            self._mods = None
 
-        chaldir = self.makepath(f'/chals/{dirname}')
-        if os.path.isdir(chaldir):
-            raise FileExistsError(f"wtf? {chaldir} exists.")
-
-        if self.get_chal_by_name(name):
-            return Exception
-
-        chalobj = CMagChallenge.new(chaldir, self, name, category, files)
-        self._chals.append(chalobj)
-
-    def del_chal(self, name):
-        for chal in self.chals:
-            if chal.name == name:
-                shutil.rmtree(chal.dir)
-                self._chals.pop(chal)
-                break
-
-    def get_chal_by_name(self, name):
-        for chal in self.chals:
-            if chal.name == name:
-                return chal
-
-    def makepath(self, *args, **kwargs):
-        return self._makepath(*args, **kwargs)
+        # init logger
+        if 'logger' in kwargs:
+            pass # TODO
 
     @property
-    def dir(self):
-        return self._dir
+    def dir(self): return self._dir
 
     @property
-    def config(self):
-        return self._config
+    def db_path(self): return self.dir / 'project.sqlite3'
 
     @property
-    def chals(self):
-        return self._chals
+    def cfg_path(self): return self.dir / 'config.json'
 
     @property
-    def modules(self):
-        return self._modules
+    def files_dir(self): return self.dir / 'files'
+
+    @property
+    def config(self): return self._config
+
+    @property
+    def database(self): return CMagProjectDatabase(self.db_path)
+
+    @property
+    def challenges(self) -> Dict[str, CMagChallengeImpl]:
+        with self.database as db:
+            return {c.id:CMagChallenge.load(self, c.id) for c in db.Challenge.select()}
+
+    @property
+    def mods(self): return self._mods
+
+    # challenge operations
+
+    def add_challenge(self):
+        pass
+
+    def upd_challenge(self):
+        pass
+
+    def del_challenge(self):
+        pass
+
+    # scanning operations
+
+    def scan_challenge(self, chall_id: str):
+
+        self._scan_queries[chall_id] = []
+
+        for mod in self.mods.initial_scanners:
+            self.scan_add(chall_id, mod.run, chall_id)
+
+        while self._scan_queries[chall_id]:
+            scanner, args, kwargs = self._scan_queries[chall_id].pop(0)
+            scanner(*args, **kwargs)
+
+    def scan_add(self, chall_id: str, scanner, *args, **kwargs):
+        self._scan_queries[chall_id].append((scanner, args, kwargs))
 
 class CMagProject:
 
-    def new(projdir, config):
-
-        if os.path.isdir(projdir):
-            raise FileExistsError(f"Directory {projdir} already exists.")
-
-        makepath = makepath_factory(projdir)
-
-        os.makedirs(makepath('/'))
-        os.makedirs(makepath('/challs'))
-
-        with open(makepath('/config.json'), 'w') as f:
-            f.write(json.dumps(config))
+    def new(project_directory: Path,
+            config: Dict[str, Any] = {},
+            logger: Any = None) -> CMagProjectImpl:
         
-        return CMagProjectImpl(projdir)
+        # paths
+        project_root  = project_directory
+        database_file = project_directory / 'project.sqlite3'
+        config_file   = project_directory / 'config.json'
+        files_dir     = project_directory / 'files'
 
-    def load(projdir):
-        if not os.path.isdir(projdir):
-            raise FileNotFoundError(f"Directory {projdir} not found.")
+        # root dir check & initialize
+        if project_root.is_dir():
+            raise FileExistsError(f"{project_root} exists.")
         else:
-            return CMagProjectImpl(projdir)
+            project_root.mkdir()
+            files_dir.mkdir()
+
+        # database initialize
+        # database = SqliteDatabase(database_file)
+        # CMagProjDatabaseProxy.initialize(database)
+        # CMagProjChallenge.create_table()
+        # CMagProjFile.create_table()
+        # database.close()
+
+        with CMagProjectDatabase(database_file) as db:
+            db.Challenge.create_table()
+            db.File.create_table()
+
+        # config save
+        with open(config_file, 'w') as file:
+            dump(config, file)
+
+        # load project
+        return CMagProject.load(project_root,
+                                config=config,
+                                logger=logger)
+
+    def load(project_root: Path, *args, **kwargs):
+        return CMagProjectImpl(project_root, *args, **kwargs)
+
+    def check():
+        pass # TODO

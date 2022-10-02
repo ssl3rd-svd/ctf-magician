@@ -1,114 +1,80 @@
-import os
-import json
 import copy
+from io import RawIOBase
 import shutil
 
-from cmag.utils import *
-from cmag.manager.file import CMagFileImpl
+from secrets import token_hex
+from pathlib import Path
+from typing import Dict
+
+from cmag.modules import CMagInitialScanner
+
+from .Project import (
+    CMagProjectImpl,
+    CMagProjectDatabase
+)
 
 class CMagChallengeImpl:
 
-    def __init__(self, chaldir, project):
-
+    def __init__(self, project: CMagProjectImpl, challenge_id: str):
         self._project = project
-
-        # Load directory info
-        self._dirname = os.path.dirname(chaldir)
-        self._dir = chaldir
-        self._makepath = makepath_factory(chaldir)
-
-        # Load info
-        self._info = {}
-        if not os.path.isfile(self.info_file_path):
-            raise Exception
-
-        with open(self.info_file_path, 'r') as f:
-            self._info = json.loads(f.read())
-
-        # Load files
-        self._files = []
-        if not os.path.isdir(self.makepath('/files')):
-            raise Exception
-
-        for file in self.info['files']:
-            filepath = self.makepath(f'/files/{file}')
-            if not os.path.isfile(filepath):
-                raise Exception
-            fileobj = CMagFileImpl(self, filepath)
-            self._files.append(fileobj)
-
-    def __del__(self):
-        self.save()
-
-    def save(self):
-        with open(self.info_file_path, 'w') as f:
-            f.write(json.dumps(self.info))
-
-    def add_file(self, path):
-        raise NotImplementedError
-
-    def del_file(self, path):
-        raise NotImplementedError
-
-    def scan(self):
-        self._scan_queries = []
-        while self._scan_queries:
-            query   = self._scan_queries.pop(0)
-            scanner = query['scanner']
-            args    = query['args']
-            kwargs  = query['kwargs']
-            scanner(*args, **kwargs)
-
-    def scan_add(self, query):
-        self._scan_queries.append(copy.deepcopy(query))
-
-    def scan_all(self):
-        
-        self.scan_add({
-            'scanner' : CMagChallengeImpl.scan_chal,
-            'args'    : (self,),
-            'kwargs'  : {}
-        })
-
-        self.scan_add({
-            'scanner' : CMagChallengeImpl.scan_files,
-            'args'    : (self,),
-            'kwargs'  : {'files': self.files}
-        })
-
-    def scan_chal(self):
-        pass
-
-    def scan_files(self, files=[]):
-        pass
-
-    def makepath(self, *args):
-        return self._makepath
-
-    @property
-    def name(self): return self.info['name']
+        self._id      = challenge_id
 
     @property
     def project(self): return self._project
 
     @property
-    def dir(self): return self._dir
+    def id(self): return self._id
 
     @property
-    def dirname(self): return self._dirname
+    def files_dir(self): return self.project.files_dir / self.id
 
     @property
-    def info_file_path(self): return os.path.join(self.dir, 'info.json')
+    def files(self) -> Dict[int, Path]:
+        files = {}
+        with self.project.database as db:
+            for row in db.Challenge.get(db.Challenge.id == self.id).files:
+                files[row.id] = row.filepath
+        return files
 
-    @property
-    def info(self): return self._info
+    # file methods
 
-    @property
-    def files(self): return self._files
+    def add_file(self, filepath: Path):
 
+        filepath = Path(filepath)
+        if filepath.is_absolute():
+            raise Exception
+
+        copy_src = filepath
+        copy_dst = self.files_dir / filepath.name
+        shutil.copyfile(copy_src, copy_dst)
+
+        copied = copy_dst.relative_to(self.project.dir)
+
+        with self.project.database as db:
+            chall_row = db.Challenge.get(db.Challenge.id == self.id)
+            file = db.File.create(challenge=chall_row, filepath=copied)
+            file.save()
+
+    def write_file(self, filepath: Path, srcfile: RawIOBase):
+
+        filepath = Path(filepath)
+        if filepath.is_absolute():
+            raise Exception
+
+        copy_dst = self.files_dir / filepath.name
+        with open(copy_dst, 'wb') as dstfile:
+            shutil.copyfileobj(srcfile, dstfile)
+
+    def upd_file(self):
+        pass
+
+    def del_file(self, id: int):
+        with self.project.database as db:
+            file = db.File.get(db.File.id == id)
+            file.delete_instance()
 
 class CMagChallenge:
-    
+
     CATEGORIES = {
         'pwn'   : 1,
         'rev'   : 2,
@@ -116,53 +82,43 @@ class CMagChallenge:
         ''      : None
     }
 
-    def new(chaldir, project, name, category, files=[], desc=''):
+    def new(project: CMagProjectImpl, *args, **kwargs):
 
-        makepath = makepath_factory(chaldir)
+        id = token_hex(16)
 
-        ini, val = CMagChallenge.guess_category(category)
-        if not ini or not val:
-            raise Exception
-        else:
-            category = val
+        files_dir = project.files_dir / id
+        if files_dir.is_dir():
+            raise FileExistsError(f"{files_dir} exists.")
 
-        for file in files:
-            if not os.path.isfile(file):
-                raise Exception
+        if 'files' in kwargs:
+            files = []
+            for file in kwargs['files']:
+                file_src = Path(file)
+                file_name = file_src.name
+                file_dst = files_dir / file_name
+                shutil.copyfile(file_src, file_dst)
+                files.append(file_dst.relative_to(project.dir))
 
-        os.makedirs(makepath('/'))
-        os.makedirs(makepath('/files'))
+        create = copy.deepcopy(kwargs)
+        create['id'] = id
+        create['category'] = CMagChallenge.guess_category(kwargs['category'])[1]
 
-        _files = []
-        for file in files:
-            filename = os.path.basename(file)
-            copyto = makepath(f'/files/{filename}')
-            shutil.copyfile(file, copyto)
-            _files.append(filename)
+        with project.database as db:
+            
+            chall = db.Challenge.create(**create)
+            chall.save()
 
-        with open('info.json', 'w') as f:
-            f.write(json.dumps({
-                'name': name,
-                'category': category,
-                'files': _files,
-                'desc': desc
-            }))
+            for file in files:
+                file = db.File.create(challenge=chall, filepath=file)
+                file.save()
 
-        return CMagChallengeImpl(chaldir, project)
+        return CMagChallengeImpl(project, id)
 
-    def load(chaldir, project):
-        return CMagChallengeImpl(chaldir, project)
+    def load(project, challenge_id):
+        return CMagChallengeImpl(project, challenge_id)
 
     def guess_category(category):
         category = category.lower()
         for ini, val in CMagChallenge.CATEGORIES:
             if category.startswith(ini):
                 return ini, val
-
-    def get_category_by_initial(initial):
-        return CMagChallenge.CATEGORIES[initial]
-
-    def get_category_by_enumval(enumval):
-        for ini, val in CMagChallenge.CATEGORIES:
-            if val == enumval:
-                return ini
