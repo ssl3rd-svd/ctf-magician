@@ -13,7 +13,7 @@ from pathlib import Path
 
 class CMagChallengeImpl:
 
-    def __init__(self, project: 'CMagProjectImpl', challenge_id: str):
+    def __init__(self, project: CMagProjectImpl, challenge_id: str):
         self._project = project
         self._id      = challenge_id
 

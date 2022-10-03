@@ -31,6 +31,7 @@ class CMagProjectDatabase:
 
     def __init__(self, path: Path):
         self._database = SqliteDatabase(path)
+        CMagProjDatabaseProxy.initialize(self._database)
 
     def __enter__(self):
         self.open()
@@ -38,14 +39,12 @@ class CMagProjectDatabase:
 
     def __exit__(self, *args, **kwargs):
         self.close()
-        return self
 
     @property
-    def database(self): return self._database
+    def o(self): return self._database
 
     def open(self):
-        CMagProjDatabaseProxy.initialize(self._database)
+        self._database.connect()
 
     def close(self):
         self._database.close()
-
