@@ -1,18 +1,16 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Any, Dict, List
+    from cmag.manager import CMagChallengeImpl
+
 from json import load, dump
-from typing import Any, Dict, List
 from pathlib import Path
 
-from cmag.modules.Loader import CMagModuleLoader
+from cmag.modules import CMagModuleLoader
 
-from .Challenge import CMagChallenge, CMagChallengeImpl
-
-from .ProjectDatabase import (
-    CMagProjectDatabase,
-    SqliteDatabase,
-    CMagProjDatabaseProxy,
-    CMagProjChallenge,
-    CMagProjFile
-)
+from .Challenge import CMagChallenge
+from .ProjectDatabase import CMagProjectDatabase
 
 class CMagProjectImpl:
     
@@ -67,7 +65,7 @@ class CMagProjectImpl:
     def database(self): return CMagProjectDatabase(self.db_path)
 
     @property
-    def challenges(self) -> Dict[str, CMagChallengeImpl]:
+    def challenges(self) -> Dict[str, 'CMagChallengeImpl']:
         with self.database as db:
             return {c.id:CMagChallenge.load(self, c.id) for c in db.Challenge.select()}
 

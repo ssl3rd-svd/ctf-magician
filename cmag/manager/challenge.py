@@ -1,21 +1,19 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Dict
+    from cmag.manager import CMagProjectImpl
+
 import copy
-from io import RawIOBase
 import shutil
 
+from io import RawIOBase
 from secrets import token_hex
 from pathlib import Path
-from typing import Dict
-
-from cmag.modules import CMagInitialScanner
-
-from .Project import (
-    CMagProjectImpl,
-    CMagProjectDatabase
-)
 
 class CMagChallengeImpl:
 
-    def __init__(self, project: CMagProjectImpl, challenge_id: str):
+    def __init__(self, project: 'CMagProjectImpl', challenge_id: str):
         self._project = project
         self._id      = challenge_id
 

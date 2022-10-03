@@ -1,10 +1,13 @@
-from cmag.manager import CMagProjectImpl
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from cmag.manager import CMagProjectImpl
 
 class CMagModuleBase:
 
     name=''
 
-    def __init__(self, project: CMagProjectImpl):
+    def __init__(self, project: 'CMagProjectImpl'):
         
         if self.name == '':
             raise NotImplementedError
@@ -29,8 +32,8 @@ class CMagFileScanner(CMagModuleBase):
 
     target='*'
 
-    def __init__(self, project: CMagProjectImpl):
-        CMagModuleBase.__init__(self, project)
+    def check(self, path: str):
+        raise NotImplementedError
 
     def run(self, chall_id: str, file_id: int, *args, **kwargs):
         raise NotImplementedError
@@ -38,12 +41,9 @@ class CMagFileScanner(CMagModuleBase):
 class CMagFileExtractor(CMagModuleBase):
 
     target='*'
-
-    def __init__(self, project: CMagProjectImpl):
-        CMagModuleBase.__init__(self, project)
     
     def check(self, path: str):
-        pass
+        raise NotImplementedError
 
     def run(self, chall_id: str, file_id: int, *args, **kwargs):
         raise NotImplementedError

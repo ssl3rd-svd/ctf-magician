@@ -1,19 +1,29 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import List
+    from cmag.manager import CMagProjectImpl
+
 from pathlib import Path
 from importlib.util import spec_from_file_location, module_from_spec
-from typing import List
+from secrets import token_hex
 
-from cmag.manager import CMagProjectImpl
-from cmag.modules import CMagModuleBase, CMagInitialScanner, CMagChallScanner, CMagFileScanner
-from cmag.modules.Base import CMagFileExtractor
+from cmag.modules import (
+    CMagModuleBase,
+    CMagInitialScanner,
+    CMagChallScanner,
+    CMagFileScanner,
+    CMagFileExtractor
+)
 
 class CMagModuleLoader:
     
     def __init__(self, project: CMagProjectImpl, path: Path):
-        self._modules = self.load(project, path)
+        self._modules = CMagModuleLoader.load(project, path)
 
     def load(project: CMagProjectImpl, path: Path):
         
-        spec = spec_from_file_location(path)
+        spec = spec_from_file_location(token_hex(32), path)
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
         
@@ -53,33 +63,23 @@ class CMagModuleLoader:
             return self.all
         return [mod for mod in self.all if isinstance(mod, base_cls)]
 
-    def file_scanners_of(self, target: str) -> List[CMagFileScanner]:
-        
+    def file_mods_of(self, target: str, basecls=None):
+
         ret = []
         
-        for mod in self.file_scanners:
+        for mod in self.mods(basecls):
             if mod.target == '*':
                 ret.append(mod)
-                continue
-            if target in mod.target.split(';'):
+            elif target in mod.target.split(';'):
                 ret.append(mod)
-                continue
-        
+
         return ret
+
+    def file_scanners_of(self, target: str) -> List[CMagFileScanner]:
+        return self.file_mods_of(target, CMagFileScanner)
 
     def file_extractors_of(self, target: str) -> List[CMagFileExtractor]:
-
-        ret = []
-        
-        for mod in self.file_extractors:
-            if mod.target == '*':
-                ret.append(mod)
-                continue
-            if target in mod.target.split(';'):
-                ret.append(mod)
-                continue
-        
-        return ret
+        return self.file_mods_of(target, CMagFileExtractor)
 
     def find_mod_by_name(self, name: str) -> CMagModuleBase:
         for mod in self.all:
