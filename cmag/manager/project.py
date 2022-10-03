@@ -18,6 +18,8 @@ class CMagProjectImpl:
         
         self._dir = project_root
         self._scan_queries = {}
+        self._challenges = {}
+        self._loading_challenges = False
 
         # init logger
         if 'logger' in kwargs:
@@ -67,14 +69,17 @@ class CMagProjectImpl:
     def database(self): return CMagProjectDatabase(self.db_path)
 
     @property
-    def challenges(self) -> Dict[str, CMagChallengeImpl]:
+    def challenges(self) -> List[str]:
         with self.database as db:
-            return {c.id:CMagChallenge.load(self, c.id) for c in db.Challenge.select()}
+            return [c.id for c in db.Challenge.select()]
 
     @property
     def mods(self): return self._mods
 
     # challenge operations
+
+    def challenge(self, id):
+        return CMagChallenge.load(self, id)
 
     def add_challenge(self):
         raise NotImplementedError

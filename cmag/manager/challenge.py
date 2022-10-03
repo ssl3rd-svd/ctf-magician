@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
-    from typing import Dict
+    from typing import Dict, List
     from cmag.manager import CMagProjectImpl
 
 import copy
@@ -10,6 +11,8 @@ import shutil
 from io import RawIOBase
 from secrets import token_hex
 from pathlib import Path
+
+from cmag.manager.exception import CMagChallIDExists, CMagChallIDNotFound
 
 class CMagChallengeImpl:
 
@@ -27,24 +30,27 @@ class CMagChallengeImpl:
     def files_dir(self): return self.project.files_dir / self.id
 
     @property
-    def files(self) -> Dict[int, Path]:
-        files = {}
+    def files(self) -> List[int]:
         with self.project.database as db:
-            for row in db.Challenge.get(db.Challenge.id == self.id).files:
-                files[row.id] = row.filepath
-        return files
+            return [r.id for r in db.Challenge.get(db.Challenge.id == self.id).files]
 
     # file methods
 
-    def add_file(self, filepath: Path):
+    def file(self, id) -> Path:
+        with self.project.database as db:
+            return self.project.dir / Path(db.File.get(db.File.id == id).filepath)
 
-        filepath = Path(filepath)
-        if filepath.is_absolute():
-            raise Exception
+    def add_file(self, filepath: Path, srcobj: RawIOBase = None):
 
-        copy_src = filepath
         copy_dst = self.files_dir / filepath.name
-        shutil.copyfile(copy_src, copy_dst)
+        if copy_dst.is_file():
+            raise FileExistsError
+
+        if not srcobj:
+            shutil.copyfile(filepath, copy_dst)
+        else:
+            with open(copy_dst, 'wb') as dstobj:
+                shutil.copyfileobj(srcobj, dstobj)
 
         copied = copy_dst.relative_to(self.project.dir)
 
@@ -52,16 +58,6 @@ class CMagChallengeImpl:
             chall_row = db.Challenge.get(db.Challenge.id == self.id)
             file = db.File.create(challenge=chall_row, filepath=copied)
             file.save()
-
-    def write_file(self, filepath: Path, srcfile: RawIOBase):
-
-        filepath = Path(filepath)
-        if filepath.is_absolute():
-            raise Exception
-
-        copy_dst = self.files_dir / filepath.name
-        with open(copy_dst, 'wb') as dstfile:
-            shutil.copyfileobj(srcfile, dstfile)
 
     def upd_file(self):
         pass
@@ -80,43 +76,41 @@ class CMagChallenge:
         ''      : None
     }
 
-    def new(project: CMagProjectImpl, *args, **kwargs):
+    def new(project: CMagProjectImpl, files=[]):
 
         id = token_hex(16)
+        if id in project.challenges:
+            raise CMagChallIDExists(id=id)
 
-        files_dir = project.files_dir / id
-        if files_dir.is_dir():
-            raise FileExistsError(f"{files_dir} exists.")
+        (project.files_dir / id).mkdir()
 
-        if 'files' in kwargs:
-            files = []
-            for file in kwargs['files']:
-                file_src = Path(file)
-                file_name = file_src.name
-                file_dst = files_dir / file_name
-                shutil.copyfile(file_src, file_dst)
-                files.append(file_dst.relative_to(project.dir))
-
-        create = copy.deepcopy(kwargs)
-        create['id'] = id
-        create['category'] = CMagChallenge.guess_category(kwargs['category'])[1]
+        # if files:
+        #     copied_files = []
+        #     for file in files:
+        #         file_src = Path(file)
+        #         file_name = file_src.name
+        #         file_dst = files_dir / file_name
+        #         shutil.copyfile(file_src, file_dst)
+        #         copied_files.append(file_dst.relative_to(project.dir))
 
         with project.database as db:
-            
-            chall = db.Challenge.create(**create)
-            chall.save()
+            db.Challenge.create(id=id)
 
-            for file in files:
-                file = db.File.create(challenge=chall, filepath=file)
-                file.save()
+        chall_obj = CMagChallengeImpl(project, id)
 
-        return CMagChallengeImpl(project, id)
+        # if files:
+        #     for file in files:
+        #         chall_obj.add_file(file)
+
+        return chall_obj
 
     def load(project, challenge_id):
+        if challenge_id not in project.challenges:
+            raise CMagChallIDNotFound(id=challenge_id)
         return CMagChallengeImpl(project, challenge_id)
 
-    def guess_category(category):
+    def guess_category(category: str) -> Dict[str, int]:
         category = category.lower()
-        for ini, val in CMagChallenge.CATEGORIES:
+        for ini, val in CMagChallenge.CATEGORIES.items():
             if category.startswith(ini):
                 return ini, val

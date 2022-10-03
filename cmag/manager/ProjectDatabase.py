@@ -15,9 +15,9 @@ class BaseModel(Model):
 
 class CMagProjChallenge(BaseModel):
     id       = CharField(unique=True)
-    name     = CharField()
-    desc     = CharField()
-    category = IntegerField()
+    name     = CharField(null=True)
+    desc     = CharField(null=True)
+    category = IntegerField(null=True)
 
 class CMagProjFile(BaseModel):
     id        = IntegerField(primary_key=True, unique=True)
