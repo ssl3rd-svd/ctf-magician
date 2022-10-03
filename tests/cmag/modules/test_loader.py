@@ -1,9 +1,11 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import Dict
+
 import pytest
-from mods import (mod01, mod02, mod03, mod04, mod05, mod06, mod07, mod08)
 
-import pathlib
-
-from cmag.manager import CMagProject
+from pathlib import Path
 from cmag.modules import (
     CMagModuleLoader,
     CMagModuleBase,
@@ -12,10 +14,14 @@ from cmag.modules import (
     CMagFileScanner,
     CMagFileExtractor
 )
+from tests.cmag.mods import (
+    mod01, mod02, mod03, mod04,
+    mod05, mod06, mod07, mod08
+)
 
 @pytest.fixture
-def loader():
-    return CMagModuleLoader(None, pathlib.Path(__file__).parent / 'mods.py')
+def loader(modspath):
+    return CMagModuleLoader(None, modspath)
 
 def test00_loader(loader: CMagModuleLoader):
     assert isinstance(loader, CMagModuleLoader)

@@ -1,16 +1,16 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Any, Dict, List
+    from typing       import Any, Dict, List
     from cmag.manager import CMagChallengeImpl
 
-from json import load, dump
-from pathlib import Path
-
-from cmag.modules import CMagModuleLoader
-
-from .Challenge import CMagChallenge
-from .ProjectDatabase import CMagProjectDatabase
+from json                         import (load as load_json,
+                                          dump as dump_json)
+from pathlib                      import Path
+from cmag.modules                 import CMagModuleLoader
+from cmag.manager.Challenge       import CMagChallenge
+from cmag.manager.ProjectDatabase import CMagProjectDatabase
+from cmag.manager.exception       import CMagConfigNotFound
 
 class CMagProjectImpl:
     
@@ -18,11 +18,17 @@ class CMagProjectImpl:
         
         self._dir = project_root
         self._scan_queries = {}
+
+        # init logger
+        if 'logger' in kwargs:
+            pass # TODO
         
-        # check structures
+        # check directories
         for dirpath in [self.dir, self.files_dir]:
             if not dirpath.is_dir():
                 raise FileNotFoundError(f"{dirpath} not found.")
+
+        # check files
         for filepath in [self.db_path, self.cfg_path]:
             if not filepath.is_file():
                 raise FileNotFoundError(f"{dirpath} not found.")
@@ -30,21 +36,17 @@ class CMagProjectImpl:
         # get config
         if 'config' not in kwargs:
             with self.cfg_path.open('r') as file:
-                config = load(file)
+                config = load_json(file)
         else:
             config = kwargs['config']
 
         self._config = config
 
         # load modules
-        if 'modules' in config:
-            self._mods = CMagModuleLoader(self, config['modules'])
+        if 'modules' not in config:
+            raise CMagConfigNotFound('modules')
         else:
-            self._mods = None
-
-        # init logger
-        if 'logger' in kwargs:
-            pass # TODO
+            self._mods = CMagModuleLoader(self, config['modules'])
 
     @property
     def dir(self): return self._dir
@@ -65,7 +67,7 @@ class CMagProjectImpl:
     def database(self): return CMagProjectDatabase(self.db_path)
 
     @property
-    def challenges(self) -> Dict[str, 'CMagChallengeImpl']:
+    def challenges(self) -> Dict[str, CMagChallengeImpl]:
         with self.database as db:
             return {c.id:CMagChallenge.load(self, c.id) for c in db.Challenge.select()}
 
@@ -75,13 +77,13 @@ class CMagProjectImpl:
     # challenge operations
 
     def add_challenge(self):
-        pass
+        raise NotImplementedError
 
     def upd_challenge(self):
-        pass
+        raise NotImplementedError
 
     def del_challenge(self):
-        pass
+        raise NotImplementedError
 
     # scanning operations
 
@@ -105,41 +107,29 @@ class CMagProject:
             config: Dict[str, Any] = {},
             logger: Any = None) -> CMagProjectImpl:
         
-        # paths
         project_root  = project_directory
         database_file = project_directory / 'project.sqlite3'
         config_file   = project_directory / 'config.json'
         files_dir     = project_directory / 'files'
 
-        # root dir check & initialize
-        if project_root.is_dir():
-            raise FileExistsError(f"{project_root} exists.")
-        else:
-            project_root.mkdir()
-            files_dir.mkdir()
+        # init directories
+        project_root.mkdir()
+        files_dir.mkdir()
 
-        # database initialize
-        # database = SqliteDatabase(database_file)
-        # CMagProjDatabaseProxy.initialize(database)
-        # CMagProjChallenge.create_table()
-        # CMagProjFile.create_table()
-        # database.close()
-
+        # create database
         with CMagProjectDatabase(database_file) as db:
             db.Challenge.create_table()
             db.File.create_table()
 
-        # config save
+        # save config to file
         with open(config_file, 'w') as file:
-            dump(config, file)
+            dump_json(config, file)
 
         # load project
-        return CMagProject.load(project_root,
-                                config=config,
-                                logger=logger)
+        return CMagProject.load(project_root, config=config, logger=logger)
 
     def load(project_root: Path, *args, **kwargs):
         return CMagProjectImpl(project_root, *args, **kwargs)
 
     def check():
-        pass # TODO
+        raise NotImplementedError

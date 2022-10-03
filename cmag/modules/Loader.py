@@ -23,6 +23,9 @@ class CMagModuleLoader:
 
     def load(project: CMagProjectImpl, path: Path):
         
+        if not path:
+            raise FileNotFoundError
+
         spec = spec_from_file_location(token_hex(32), path)
         module = module_from_spec(spec)
         spec.loader.exec_module(module)
