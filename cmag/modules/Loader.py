@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from cmag.manager import CMagProjectImpl
 
 from pathlib import Path
-from importlib.util import spec_from_file_location, module_from_spec
+from importlib import import_module
 from secrets import token_hex
 
 from cmag.modules import (
@@ -18,26 +18,62 @@ from cmag.modules import (
 
 class CMagModuleLoader:
     
-    def __init__(self, project: CMagProjectImpl, path: Path):
-        self._modules = CMagModuleLoader.load(project, path)
+    def __init__(self, project: CMagProjectImpl, modules_path: List[Path] = [], modules_name: List[str] = []):
+        self._modules = []
+        if modules_path:
+            self._modules.extend(CMagModuleLoader.load_by_path(project, modules_path))
+        if modules_name:
+            self._modules.extend(CMagModuleLoader.load_by_name(project, modules_name))
 
-    def load(project: CMagProjectImpl, path: Path):
-        
-        if not path:
+    def load_by_path(project: CMagProjectImpl, modules_path: List[Path]):
+    
+        if not modules_path and not Path(modules_path).exists():
             raise FileNotFoundError
 
-        spec = spec_from_file_location(token_hex(32), path)
-        module = module_from_spec(spec)
-        spec.loader.exec_module(module)
-        
-        if not hasattr(module, 'init'):
-            raise Exception
+        modules = []
 
-        modules = module.init(project)
+        for path in modules_path:
+
+            target = Path(path)
+        
+            if target.name.endswith('.py'):
+                name = target.stem
+            else:
+                name = target.name
+
+            __import__("sys").path.append(target.parent)
+            module = __import__(name)
+        
+            if not hasattr(module, 'init'):
+                raise Exception
+
+            modules.extend(module.init(project))
 
         for mod in modules:
             if not isinstance(mod, CMagModuleBase):
                 raise Exception
+
+        return modules
+
+    def load_by_name(project: CMagProjectImpl, module_name: str | List[str]):
+
+        if type(module_name) == str:
+
+            # module = __import__(module_name)
+            module = import_module(module_name, module_name.split(".")[-1])
+            if not hasattr(module, 'init'):
+                raise Exception
+
+            mods = module.init(project)
+            for mod in mods:
+                if not isinstance(mod, CMagModuleBase):
+                    raise Exception
+
+            return mods
+
+        modules = []
+        for name in module_name:
+            modules.extend(CMagModuleLoader.load_by_name(project, name))
 
         return modules
 

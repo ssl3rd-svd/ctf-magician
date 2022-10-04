@@ -10,6 +10,7 @@ from pathlib                      import Path
 from cmag.modules                 import CMagModuleLoader
 from cmag.manager.Challenge       import CMagChallenge
 from cmag.manager.ProjectDatabase import CMagProjectDatabase
+from cmag.manager.ProjectConfig   import CMagProjectConfig
 from cmag.manager.exception       import CMagConfigNotFound
 
 class CMagProjectImpl:
@@ -36,19 +37,17 @@ class CMagProjectImpl:
                 raise FileNotFoundError(f"{dirpath} not found.")
 
         # get config
-        if 'config' not in kwargs:
-            with self.cfg_path.open('r') as file:
-                config = load_json(file)
+        if 'config' in kwargs:
+            self._config = kwargs['config']
         else:
-            config = kwargs['config']
-
-        self._config = config
+            self._config = CMagProjectConfig(self.cfg_path)
 
         # load modules
-        if 'modules' not in config:
+        if not self.config['modules']:
             raise CMagConfigNotFound('modules')
         else:
-            self._mods = CMagModuleLoader(self, config['modules'])
+            self._mods = CMagModuleLoader(self, self.config['modules'], ["cmag.modules.InitialScanner"])
+
 
     @property
     def dir(self): return self._dir
@@ -81,8 +80,8 @@ class CMagProjectImpl:
     def challenge(self, id):
         return CMagChallenge.load(self, id)
 
-    def add_challenge(self):
-        raise NotImplementedError
+    def add_challenge(self, *args, **kwargs):
+        return CMagChallenge.new(self, *args, **kwargs)
 
     def upd_challenge(self):
         raise NotImplementedError
@@ -97,14 +96,23 @@ class CMagProjectImpl:
         self._scan_queries[chall_id] = []
 
         for mod in self.mods.initial_scanners:
-            self.scan_add(chall_id, mod.run, chall_id)
+            self.scan_query(chall_id, mod.run, chall_id)
 
         while self._scan_queries[chall_id]:
             scanner, args, kwargs = self._scan_queries[chall_id].pop(0)
             scanner(*args, **kwargs)
 
-    def scan_add(self, chall_id: str, scanner, *args, **kwargs):
+    def scan_query(self, chall_id: str, scanner, *args, **kwargs):
         self._scan_queries[chall_id].append((scanner, args, kwargs))
+
+    def scan_query_next(self, chall_id: str, scanner, *args, **kwargs):
+        self._scan_queries[chall_id].insert(0, (scanner, args, kwargs))
+
+    def scan_cancel_after(self, chall_id, index: int):
+        self._scan_queries[chall_id] = self._scan_queries[chall_id][:index]
+
+    def scan_cancel_all(self, chall_id: str):
+        self._scan_queries[chall_id] = []
 
 class CMagProject:
 
@@ -112,6 +120,8 @@ class CMagProject:
             config: Dict[str, Any] = {},
             logger: Any = None) -> CMagProjectImpl:
         
+        project_directory = Path(project_directory)
+
         project_root  = project_directory
         database_file = project_directory / 'project.sqlite3'
         config_file   = project_directory / 'config.json'
@@ -127,11 +137,11 @@ class CMagProject:
             db.File.create_table()
 
         # save config to file
-        with open(config_file, 'w') as file:
-            dump_json(config, file)
+        cfg = CMagProjectConfig(config_file, config)
+        cfg.save()
 
         # load project
-        return CMagProject.load(project_root, config=config, logger=logger)
+        return CMagProject.load(project_root, config=cfg, logger=logger)
 
     def load(project_root: Path, *args, **kwargs):
         return CMagProjectImpl(project_root, *args, **kwargs)

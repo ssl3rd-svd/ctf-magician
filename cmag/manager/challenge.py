@@ -42,6 +42,8 @@ class CMagChallengeImpl:
 
     def add_file(self, filepath: Path, srcobj: RawIOBase = None):
 
+        filepath = Path(filepath)
+
         copy_dst = self.files_dir / filepath.name
         if copy_dst.is_file():
             raise FileExistsError
@@ -66,6 +68,23 @@ class CMagChallengeImpl:
         with self.project.database as db:
             file = db.File.get(db.File.id == id)
             file.delete_instance()
+
+    # scan methods
+
+    def scan(self, *args, **kwargs):
+        return self.project.scan_challenge(self.id, *args, **kwargs)
+
+    def scan_query(self, *args, **kwargs):
+        return self.project.scan_query(self.id, *args, **kwargs)
+
+    def scan_query_next(self, *args, **kwargs):
+        return self.project.scan_query_next(self.id, *args, **kwargs)
+
+    def scan_cancel_after(self, *args, **kwargs):
+        return self.project.scan_cancel_after(self.id, *args, **kwargs)
+
+    def scan_cancel_all(self, *args, **kwargs):
+        return self.project.scan_cancel_all(self.id, *args, **kwargs)
 
 class CMagChallenge:
 

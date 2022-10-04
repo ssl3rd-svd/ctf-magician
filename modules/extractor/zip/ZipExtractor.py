@@ -11,9 +11,9 @@ class CMagZipExtractor(CMagFileExtractor):
 
     def run(self, chall_id: str, file_id: int, *args, **kwargs):
         import zipfile
-        challenge = self.project.challenges[chall_id]
-        filepath = challenge.files[file_id]
-        with zipfile.ZipFile(filepath, 'r') as zip:
+        challenge = self.project.challenge(chall_id)
+        file_path = challenge.file(file_id)
+        with zipfile.ZipFile(file_path, 'r') as zip:
             for name in zip.namelist():
                 with zip.open(name) as file:
-                    challenge.write_file(name, file)
+                    challenge.add_file(name, file)

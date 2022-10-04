@@ -21,7 +21,7 @@ from tests.cmag.mods import (
 
 @pytest.fixture
 def loader(modspath):
-    return CMagModuleLoader(None, modspath)
+    return CMagModuleLoader(None, [modspath])
 
 def test00_loader(loader: CMagModuleLoader):
     assert isinstance(loader, CMagModuleLoader)

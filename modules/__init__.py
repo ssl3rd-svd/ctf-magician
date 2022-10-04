@@ -1,5 +1,5 @@
-from extractor import init as extractor_init
-from scanner   import init as scanner_init
+from .extractor import init as extractor_init
+from .scanner   import init as scanner_init
 
 def init(project):
     modules = []
