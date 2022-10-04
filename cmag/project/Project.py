@@ -35,6 +35,9 @@ class CMagProject:
     @property
     def files_dir(self): return self.dir / 'files'
 
+    @property
+    def plugins_dir(self): return self.dir / 'plugins'
+
     # components
 
     @property
@@ -53,10 +56,12 @@ class CMagProject:
 
     def scan_challenge(self, chall_id: str):
 
-        self._scan_queries[chall_id] = []
+        if chall_id not in self._scan_queries:
+            self._scan_queries[chall_id] = []
 
-        for mod in self.mods.initial_scanners:
-            self.scan_query(chall_id, mod.run, chall_id)
+        if not self._scan_queries[chall_id]:
+            for plugin in self.plugins.initial_scanners:
+                self.scan_query(chall_id, plugin.run, chall_id)
 
         while self._scan_queries[chall_id]:
             scanner, args, kwargs = self._scan_queries[chall_id].pop(0)

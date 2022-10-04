@@ -21,6 +21,7 @@ class CMagProjectManager:
 
         (project_root := project_directory).mkdir()
         (files_dir := project_directory / 'files').mkdir()
+        (plugins_dir := project_directory / 'plugins').mkdir()
         database_file = project_directory / 'project.sqlite3'
         config_file = project_directory / 'config.json'
 
@@ -39,5 +40,7 @@ class CMagProjectManager:
     def load(project_root: Path, *args, **kwargs):
         return CMagProject(project_root, *args, **kwargs)
 
-    def check():
-        raise NotImplementedError
+    def check(project_directory: Path):
+        if Path(project_directory).is_dir():
+            return True
+        return False
