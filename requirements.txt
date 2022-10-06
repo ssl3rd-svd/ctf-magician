@@ -2,3 +2,6 @@ requests
 beautifulsoup4
 pyjson5
 peewee
+colorama
+termcolor
+pytest

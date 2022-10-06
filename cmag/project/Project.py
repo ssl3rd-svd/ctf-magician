@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 if __import__("typing").TYPE_CHECKING:
     from typing import Any, Dict, List
 
@@ -14,7 +15,7 @@ class CMagProject:
     
     def __init__(self, project_root: Path, logger: Any = None, *args, **kwargs):
         
-        self._dir = project_root
+        self._dir = Path(project_root)
         self._scan_queries = {}
 
         self._config     = CMagProjectConfig(self.cfg_path)

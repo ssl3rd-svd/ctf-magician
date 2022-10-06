@@ -1,3 +1,9 @@
+from __future__ import annotations
+
+if __import__("typing").TYPE_CHECKING:
+    from typing import Any, Dict, List
+    from ..Session import CMagConsoleSession
+
 import shlex
 import argparse
 
@@ -7,7 +13,7 @@ class CMagCmdHandlerBase:
     usage = ''
     description = ''
 
-    def __init__(self, session):
+    def __init__(self, session: CMagConsoleSession):
         self.session = session
 
     def __call__(self, arg):
@@ -20,8 +26,10 @@ class CMagCmdHandlerBase:
         argv = shlex.split(arg)
         parser = argparse.ArgumentParser(exit_on_error=False)
         parser.prog = self.name
-        parser.usage = self.usage
-        parser.description = self.description
+        if self.usage:
+            parser.usage = self.usage
+        if self.description:
+            parser.description = self.description
         self.create_parser(parser)
 
         try:

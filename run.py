@@ -1,3 +1,3 @@
 if __name__ == '__main__':
-    from cmag.interface.cli import start
+    from cmag.interface import start
     start()

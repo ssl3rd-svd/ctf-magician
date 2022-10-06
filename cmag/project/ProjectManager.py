@@ -35,7 +35,7 @@ class CMagProjectManager:
         cfg.save()
 
         # load project
-        return CMagProject.load(project_root, logger=logger)
+        return CMagProjectManager.load(project_root, logger=logger)
 
     def load(project_root: Path, *args, **kwargs):
         return CMagProject(project_root, *args, **kwargs)

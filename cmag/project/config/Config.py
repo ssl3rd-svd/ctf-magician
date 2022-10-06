@@ -13,16 +13,12 @@ class CMagConfig:
 
         self.fields = fields
 
-        if cfg_data:
-            with open(cfg_path, 'w') as f:
-                json.dump(cfg_data, f)
+        with open(cfg_path, 'w') as f:
+            json.dump(cfg_data, f)
 
         self.path = Path(cfg_path)
         self.data = {}
         self.load()
-        self.save()
-
-    def __del__(self):
         self.save()
 
     def __getitem__(self, key: str):
