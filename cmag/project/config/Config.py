@@ -9,17 +9,23 @@ from .ConfigField import CMagFieldTypes as fieldtypes
 
 class CMagConfig:
 
-    def __init__(self, fields: List[fieldtypes.default], cfg_path: Path, cfg_data: Dict[str, Any] = {}):
+    def __init__(self, fields: List[fieldtypes.default],
+                       cfg_load_file: str | Path = {},
+                       cfg_load_data: Dict[str, Any] = {},
+                       cfg_load_default=False,
+                       raise_key_error=True,
+                       raise_value_error=True):
 
         self.fields = fields
-
-        with open(cfg_path, 'w') as f:
-            json.dump(cfg_data, f)
-
-        self.path = Path(cfg_path)
         self.data = {}
-        self.load()
-        self.save()
+        self.loaded = False
+
+        if cfg_load_default:
+            self.load_default()
+        elif cfg_load_data:
+            self.load(cfg_load_data, raise_key_error, raise_value_error)
+        elif cfg_load_file:
+            self.load_from_file(cfg_load_file, raise_key_error, raise_value_error)
 
     def __getitem__(self, key: str):
         for field in self.fields:
@@ -35,19 +41,33 @@ class CMagConfig:
     def required_fields(self):
         return [field.name for field in self.fields if field.required]
 
-    def load(self):
-
-        with open(self.path) as f:
-            loaded = json.load(f)
-
+    def load_default(self):
         for field in self.fields:
             field.set(self, field.OP_INIT, key=field.name, value=field.init)
-            if field.required and field.name not in loaded:
-                raise KeyError
-            if field.name in loaded:
-                self[field.name] = loaded[field.name]
 
-    def save(self):
+    def load(self, config: Dict[str, Any], raise_key_error=True, raise_value_error=True):
+
+        for field in self.fields:
+
+            field.set(self, field.OP_INIT, key=field.name, value=field.init)
+
+            if field.required:
+                if field.name not in config and raise_key_error:
+                    raise KeyError
+                elif not config[field.name] and field.null and raise_value_error:
+                    raise ValueError
+
+            if field.name in config:
+                self[field.name] = config[field.name]
+
+        self.loaded = True
+
+    def load_from_file(self, filepath, raise_key_error=True, raise_value_error=True):
+        with open(filepath) as f:
+            loaded = json.load(f)
+            self.load(loaded, raise_key_error, raise_value_error)
+
+    def save_to_file(self, filepath):
 
         to_save = {}
 
@@ -56,5 +76,5 @@ class CMagConfig:
             value = field.get(self, field.OP_SAVE, key=field.name)
             to_save[key] = value
 
-        with open(self.path, 'w') as f:
+        with open(filepath, 'w') as f:
             json.dump(to_save, f)

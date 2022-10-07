@@ -11,6 +11,7 @@ class CMagConfFieldBase:
     desc = ''
     init = None
     required = False
+    null = True
 
     OP_NONE = 0
     OP_INIT = 1

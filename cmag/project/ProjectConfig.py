@@ -3,15 +3,18 @@ if __import__("typing").TYPE_CHECKING:
     from typing import Any, Dict, List
     from pathlib import Path
 
+from pathlib import Path
 from cmag.project.config import CMagConfig
-from cmag.project.config import CMagFieldTypes as fieldtypes
-
-class plugins(fieldtypes.abspathlist):
-    name = 'plugins'
-    desc = 'External plugins path.'
-
-CMagProjectConfigFields = [plugins]
+from .ProjectConfigFields import CMagProjectConfigFields as configfields
 
 class CMagProjectConfig(CMagConfig):
-    def __init__(self, cfg_path: Path, cfg_data: Dict[str, Any] = {}):
-        CMagConfig.__init__(self, CMagProjectConfigFields, cfg_path, cfg_data)
+
+    def __init__(self, filepath, *args, **kwargs):
+        self.filepath = Path(filepath)
+        super().__init__(configfields, cfg_default=True, *args, **kwargs)
+
+    def loadfile(self, **kwargs):
+        self.load_from_file(self.filepath, **kwargs)
+
+    def savefile(self, **kwargs):
+        self.save_to_file(self.filepath, **kwargs)

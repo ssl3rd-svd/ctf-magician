@@ -3,57 +3,56 @@ from __future__ import annotations
 if __import__("typing").TYPE_CHECKING:
     from typing import Any, Dict, List
 
+import json
 from pathlib import Path
-from cmag.project.challenge import CMagChallengeManager
 from cmag.project.database import CMagProjectDatabase
-from cmag.project.loader import CMagPluginLoader
-from cmag.project.config import CMagConfig
-from cmag.project.exception import *
 from .ProjectConfig import CMagProjectConfig
+from .ProjectImpl import CMagProjectImpl
 
-class CMagProject:
-    
-    def __init__(self, project_root: Path, logger: Any = None, *args, **kwargs):
+class CMagProject(CMagProjectImpl):
+
+    def create(project_directory: str | Path,
+               cfg_load_file: str | Path = '',
+               cfg_load_data: Dict[str, Any] = {},
+               logger: Any = None,
+               *args, **kwargs) -> CMagProject:
         
-        self._dir = Path(project_root)
-        self._scan_queries = {}
+        project_directory = Path(project_directory)
 
-        self._config     = CMagProjectConfig(self.cfg_path)
-        self._plugins    = CMagPluginLoader(self, self.config['plugins'], ["cmag.plugin"])
-        self._challenges = CMagChallengeManager(self)
+        if (project_root := project_directory).is_dir():
+            raise Exception
+        else:
+            project_root.mkdir()
+            (files_dir := project_root / 'files').mkdir()
+            (plugins_dir := project_directory / 'plugins').mkdir()
 
-    # paths
+        database_file = project_directory / 'project.sqlite3'
+        with CMagProjectDatabase(database_file) as db:
+            db.Challenge.create_table()
+            db.File.create_table()
 
-    @property
-    def dir(self): return self._dir
+        config_file = project_directory / 'config.json'
+        CMagProjectConfig(config_file).savefile()
 
-    @property
-    def db_path(self): return self.dir / 'project.sqlite3'
+        project = CMagProject(project_directory,
+                              cfg_load_file=cfg_load_file,
+                              cfg_load_data=cfg_load_data,
+                              *args, **kwargs)
+        return project
+        
+    def load(project_directory: str | Path,
+             cfg_load_file: str | Path = '',
+             cfg_load_data: Dict[str, Any] = {},
+             cfg_load_default: bool = False,
+             *args, **kwargs) -> CMagProject:
 
-    @property
-    def cfg_path(self): return self.dir / 'config.json'
+        return CMagProject(project_directory,
+                           cfg_load_file=cfg_load_file,
+                           cfg_load_data=cfg_load_data,
+                           *args, **kwargs)
 
-    @property
-    def files_dir(self): return self.dir / 'files'
-
-    @property
-    def plugins_dir(self): return self.dir / 'plugins'
-
-    # components
-
-    @property
-    def config(self): return self._config
-
-    @property
-    def database(self): return CMagProjectDatabase(self.db_path)
-
-    @property
-    def plugins(self): return self._plugins
-
-    @property
-    def challenges(self): return self._challenges
-
-    # scanning operations
+    def check(project_directory: str | Path) -> bool:
+        ...
 
     def scan_challenge(self, chall_id: str):
 

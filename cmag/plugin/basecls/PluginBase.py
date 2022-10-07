@@ -8,7 +8,7 @@ from cmag.project.config import CMagConfig, CMagFieldTypes
 class CMagPluginBase:
 
     name = ''
-    config_fields = []
+    config = None
 
     def __init__(self, project: CMagProject):
         
@@ -17,11 +17,7 @@ class CMagPluginBase:
         if self.name == '':
             raise NotImplementedError
 
-        if self.dir.is_dir():
-            self._config = CMagConfig(self.config_fields, self.cfg_path)
-        else:
-            self.dir.mkdir()
-            self._config = None
+        self._cfg = None
 
     @property
     def project(self):
@@ -32,19 +28,11 @@ class CMagPluginBase:
         return self.project.plugins_dir / self.name
 
     @property
-    def cfg_path(self):
-        return self.dir / 'config.json'
-
-    @property
-    def config(self):
-        return self._config
-
-    def set_config(self, cfgval):
-        self._config = CMagConfig(self.config_fields, self.cfg_path, cfgval)
+    def cfg(self):
+        return self._cfg
 
     def start(self, *args, **kwargs):
-        if self.config:
-            self.run(*args, **kwargs)
+        self.run(*args, **kwargs)
 
     def check(self):
         raise NotImplementedError
