@@ -1,2 +1,0 @@
-class CMagManagerException(Exception):
-    pass
