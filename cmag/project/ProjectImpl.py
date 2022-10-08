@@ -8,6 +8,7 @@ import warnings
 from secrets import token_hex
 from pathlib import Path
 from cmag.challenge import CMagChallenge
+from cmag.plugin import CMagPluginLoader
 from .ProjectConfig import CMagProjectConfig
 
 class CMagProjectImpl:
@@ -21,6 +22,7 @@ class CMagProjectImpl:
         self._dir = project_dir
         self._cfg = CMagProjectConfig(self.path_cfg, cfg_load_file, cfg_load_dict, cfg_load_default)
         self._challenges: Dict[str, CMagChallenge] = {}
+        self._loader = CMagPluginLoader(self.cfg['plugins'])
 
         if cfg_save_on_init:
             self.cfg.save()
@@ -86,10 +88,9 @@ class CMagProjectImpl:
         )
 
         if challenge:
-            self.challenges[dirname] = challenge
             self.cfg['challenges'] += [dirname]
 
-        return challenge
+        return self.load_challenge(dirname, cfg_load_file, cfg_load_dict, cfg_load_default)
 
     def load_challenge(self, dirname: str,
                              cfg_load_file: str = '',
@@ -118,6 +119,9 @@ class CMagProjectImpl:
 
         return challenge
 
+    def unload_challenge(self):
+        raise NotImplementedError
+
     def get_challenge(self, dirname: str) -> CMagChallenge | None:
         if dirname in self.cfg['challenges'] and dirname in self.challenges:
             return self.challenges[dirname]
@@ -135,3 +139,20 @@ class CMagProjectImpl:
 
         if (challenge_dir := self.path_challenges / dirname).is_dir():
             shutil.rmtree(challenge_dir, ignore_errors=True)
+
+    # Plugin methods --
+
+    def add_plugin(self):
+        raise NotImplementedError
+
+    def load_plugin(self):
+        raise NotImplementedError
+
+    def unload_plugin(self):
+        raise NotImplementedError
+
+    def get_plugin(self):
+        raise NotImplementedError
+
+    def remove_plugin(self):
+        raise NotImplementedError

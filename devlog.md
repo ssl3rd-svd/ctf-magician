@@ -2,8 +2,9 @@
 
 - [-] write PluginBase, PluginConfig.
   - [v] write config flattening system
-  - [ ] write CMagPluginBase.
-- [ ] write Loader, LoaderImpl.
+  - [x] write CMagPluginBase.
+- [v] write Loader, LoaderImpl.
+- [ ] write loader implementation on project.
 - [ ] cleaning up exceptions
 - [ ] write interfaces
 - [ ] write plugin run functions on project.

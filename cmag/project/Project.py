@@ -55,3 +55,6 @@ class CMagProject(impl):
     def load_challenges(self):
         for dirname in self.cfg['challenges']:
             self.load_challenge(dirname)
+
+    def load_plugins(self):
+        raise NotImplementedError
