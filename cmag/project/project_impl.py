@@ -8,6 +8,7 @@ from pathlib import Path
 from cmag.database import CMagDatabase
 from cmag.challenge import CMagChallenge
 from cmag.challenge.manager import CMagChallengeManager
+from cmag.plugin.manager import CMagPluginManager
 
 class CMagProjectImpl:
 
@@ -17,7 +18,7 @@ class CMagProjectImpl:
         self.path.mkdir(exist_ok=True)
 
         self._challmgr = CMagChallengeManager(self)
-        self._plginmgr = None
+        self._plginmgr = CMagPluginManager(self)
 
     @property
     def dir(self):
@@ -52,16 +53,40 @@ class CMagProjectImpl:
         return self.challenge_manager.list_challenges(*args, **kwargs)
 
     def remove_challenge(self, *args, **kwargs):
-        self.challenge_manager.remove_challenge(*args, **kwargs)
+        return self.challenge_manager.remove_challenge(*args, **kwargs)
 
-    def add_plugin(self):
-        pass
+    def add_plugin(self, *args, **kwargs):
+        return self.plugin_manager.add_plugin(*args, **kwargs)
 
-    def remove_plugin(self):
-        pass
+    def enable_plugin(self, *args, **kwargs):
+        return self.plugin_manager.enable_plugin(*args, **kwargs)
 
-    def load_plugin(self):
-        pass
+    def disable_plugin(self, *args, **kwargs):
+        return self.plugin_manager.disable_plugin(*args, **kwargs)
 
-    def unload_plugin(self):
-        pass
+    def load_all(self, *args, **kwargs):
+        return self.plugin_manager.load_all(*args, **kwargs)
+
+    def load_plugin_once(self, *args, **kwargs):
+        return self.plugin_manager.load_plugin_once(*args, **kwargs)
+
+    def load_plugin(self, *args, **kwargs):
+        return self.plugin_manager.load_plugin(*args, **kwargs)
+
+    def get_loaded_plugin(self, *args, **kwargs):
+        return self.plugin_manager.get_loaded_plugin(*args, **kwargs)
+
+    def list_plugins(self, *args, **kwargs):
+        return self.plugin_manager.list_plugins(*args, **kwargs)
+
+    def list_loaded_plugins(self, *args, **kwargs):
+        return self.plugin_manager.list_loaded_plugins(*args, **kwargs)
+
+    def save_loaded_plugin_options(self, *args, **kwargs):
+        return self.plugin_manager.save_loaded_plugin_options(*args, **kwargs)
+
+    def unload_plugin_once(self, *args, **kwargs):
+        return self.plugin_manager.unload_plugin_once(*args, **kwargs)
+
+    def unload_plugin(self, *args, **kwargs):
+        return self.plugin_manager.unload_plugin(*args, **kwargs)
