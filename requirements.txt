@@ -2,3 +2,7 @@ colorama
 termcolor
 peewee
 dataclasses-json
+pytest
+beautifulsoup4
+pyjson5
+requests

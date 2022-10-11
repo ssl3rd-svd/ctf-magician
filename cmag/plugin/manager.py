@@ -5,7 +5,6 @@ if typing.TYPE_CHECKING:
     from cmag.project import CMagProject
 
 import sys
-import warnings
 from importlib import import_module
 from pathlib import Path
 from cmag.plugin import CMagPlugin
@@ -23,6 +22,7 @@ class CMagPluginManager:
         self._plugins = []
         self.load_all()
 
+    # properties
 
     @property
     def project(self) -> CMagProject:
@@ -32,6 +32,7 @@ class CMagPluginManager:
     def plugins(self) -> List[CMagPlugin]:
         return self._plugins
 
+    # methods
 
     def enable_plugin(self, id: int):
         with self.project.db as database:
@@ -122,6 +123,7 @@ class CMagPluginManager:
     def unload_plugin(self, callname: str):
         raise NotImplementedError
 
+    # static methods
 
     def get_plugin_from_module(module: Any) -> Optional[CMagPlugin]:
         for attrname in dir(module):
