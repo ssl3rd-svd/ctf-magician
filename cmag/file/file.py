@@ -5,6 +5,7 @@ if typing.TYPE_CHECKING:
     from cmag.project import CMagProject
     from cmag.challenge import CMagChallenge
 
+from pathlib import Path
 from cmag.file.model import CMagFileModel
 
 class CMagFile:
@@ -29,6 +30,10 @@ class CMagFile:
     @property
     def path(self) -> str:
         return self.get_record().path
+
+    @property
+    def abspath(self) -> str:
+        return str(self.challenge.file_manager.path / self.path)
 
     def get_record(self) -> CMagFileModel:
         return CMagFileModel.get(CMagFileModel.id == self.id)
