@@ -74,7 +74,7 @@ class CMagFileManager:
                 challenge=self.challenge.get_record()
             )
             if record:
-                return CMagFile(self.project, self, record.id)
+                return CMagFile(self.project, self.challenge, record.id)
 
     def add_file(self, srcpath: str, dstpath: str = '') -> Optional[CMagFile]:
 
@@ -98,19 +98,19 @@ class CMagFileManager:
                 challenge=self.challenge.get_record()
             )
             if record:
-                return CMagFile(self.project, self, record.id)
+                return CMagFile(self.project, self.challenge, record.id)
 
     def get_file_by_id(self, id: int) -> Optional[CMagFile]:
         with self.project.db as database:
             record = CMagFileModel.get(CMagFileModel.id == id)
             if record:
-                return CMagFile(self.project, self, record.id)
+                return CMagFile(self.project, self.challenge, record.id)
 
     def get_file_by_path(self, path: str) -> Optional[CMagFile]:
         with self.project.db as database:
             record = CMagFileModel.get(CMagFileModel.path == path)
             if record:
-                return CMagFile(self.project, self, record.id)
+                return CMagFile(self.project, self.challenge, record.id)
 
     def list_files(self) -> Dict[int:str]:
         with self.project.db as database:
