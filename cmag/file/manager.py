@@ -4,7 +4,7 @@ if typing.TYPE_CHECKING:
     from typing import Any, Dict, List, Optional
     from cmag.project import CMagProject
     from cmag.challenge import CMagChallenge
-
+import os
 from pathlib import Path
 from shutil import copyfile
 from cmag.file import CMagFile
@@ -53,7 +53,11 @@ class CMagFileManager:
             return dstpath
 
     def create_directory(self, dstpath: str):
-        raise NotImplementedError
+        try:
+            if not os.path.exists(self.abspath(dstpath)):
+                os.makedirs(self.abspath(dstpath))
+        except OSError:
+            raise Exception('creating file directory error')
 
     def add_directory(self, srcpath: str, dstpath: str):
         raise NotImplementedError
