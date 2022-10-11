@@ -47,10 +47,11 @@ class CMagFileManager:
         return destpath
 
     def abspath(self, dstpath: str | Path) -> Path:
-        if not dstpath.is_absolute():
-            return self.path / dstpath
+        destpath = Path(dstpath)
+        if not destpath.is_absolute():
+            return self.path / destpath
         else:
-            return dstpath
+            return destpath
 
     def create_directory(self, dstpath: str):
         try:
