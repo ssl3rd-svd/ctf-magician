@@ -5,18 +5,30 @@ if typing.TYPE_CHECKING:
     from cmag.project import CMagProject
 
 from .model import CMagPluginModel
-from .option import CMagPluginOption
+from .option import CMagPluginOptions
 
 class CMagPlugin:
 
     callname = ''
     start = None
-    optdef = CMagPluginOption
+    optdef = CMagPluginOptions
 
-    def __init__(self, project: CMagProject, id: int, options={}):
+    def __init__(self, project: CMagProject, id: int, options: str | Dict = {}):
+        
         self._project = project
         self._id = id
-        self._options = options
+        self._options = None
+
+        if type(options) == str and options != '':
+            self.load_json_options(options)
+        elif type(options) == dict and options != {}:
+            self.load_options(options)
+        
+        if self._options == None:
+            self.load_options_from_db()
+        if self._options == None:
+            self.load_default_options()
+        
         if not self.start:
             self.start = self.run
     
@@ -43,6 +55,10 @@ class CMagPlugin:
 
     def load_options(self, options: dict):
         self._options = self.optdef.from_dict(options)
+        return self._options
+
+    def load_json_options(self, options: str):
+        self._options = self.optdef.from_json(options)
         return self._options
 
     def load_default_options(self):

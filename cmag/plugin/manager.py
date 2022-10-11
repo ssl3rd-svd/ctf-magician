@@ -33,17 +33,6 @@ class CMagPluginManager:
         return self._plugins
 
 
-    def add_plugin(self, impfrom: str, options: dict = {}):
-        
-        # maybe we need to use exception-catch here? don't know...
-        plugin = self.load_plugin_once(impfrom, options)
-        self.unload_plugin_once(plugin.callname)
-        del plugin
-
-        with self.project.db as database:
-            record = CMagPluginModel.create(impfrom=impfrom, options=plugin.options, enabled=True)
-            self.load_plugin(record=record)
-
     def enable_plugin(self, id: int):
         with self.project.db as database:
             CMagPluginModel.get(CMagPluginModel.id == id).update(enabled=True)
@@ -51,6 +40,16 @@ class CMagPluginManager:
     def disable_plugin(self, id: int):
         with self.project.db as database:
             CMagPluginModel.get(CMagPluginModel.id == id).update(enabled=False)
+
+    def add_plugin(self, impfrom: str, options: dict = {}):
+        
+        # maybe we need to use exception-catch here? don't know...
+        plugin = self.load_plugin_once(impfrom, options)
+        self.unload_plugin_once(plugin.callname)
+
+        with self.project.db as database:
+            record = CMagPluginModel.create(impfrom=impfrom, options=plugin.options.to_json(), enabled=True)
+            self.load_plugin(record=record)
 
     def load_all(self, clear=True) -> Tuple[int, int]:
         
@@ -75,7 +74,7 @@ class CMagPluginManager:
         if not plugin_class:
             return None
 
-        plugin = plugin_class(self.project, -1, options=options)
+        plugin = plugin_class(self.project, -1, options)
         self.plugins.append(plugin)
 
         return plugin
@@ -95,9 +94,7 @@ class CMagPluginManager:
         if not plugin_class:
             return None
 
-        plugin = plugin_class(self.project, record.id)
-        plugin.load_options_from_db()
-
+        plugin = plugin_class(self.project, record.id, record.options)
         self.plugins.append(plugin)
         return plugin
 
@@ -106,9 +103,9 @@ class CMagPluginManager:
             if plugin.callname == callname:
                 return plugin
 
-    def list_plugins(self) -> List:
+    def list_plugins(self) -> Dict[int:str]:
         with self.project.db as database:
-            return CMagPluginModel.select()
+            return {plugin.id:plugin.impfrom for plugin in CMagPluginModel.select()}
 
     def list_loaded_plugins(self) -> List[CMagPlugin]:
         return self.plugins
