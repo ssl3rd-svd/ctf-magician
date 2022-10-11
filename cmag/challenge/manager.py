@@ -45,5 +45,8 @@ class CMagChallengeManager:
                 return {record.id:record.name for record in records}
         return {}
 
-    def remove_challenge(self):
-        raise NotImplementedError
+    def remove_challenge(self, id: int) -> int:
+        with self.project.db as database:
+            record = CMagChallengeModel.get(id=id)
+            if record:
+                return record.delete_instance()
