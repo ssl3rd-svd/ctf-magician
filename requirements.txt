@@ -1,0 +1,4 @@
+colorama
+termcolor
+peewee
+dataclasses-json

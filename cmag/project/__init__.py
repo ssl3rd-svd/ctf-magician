@@ -1,1 +1,1 @@
-from .Project import CMagProject
+from .project import CMagProject

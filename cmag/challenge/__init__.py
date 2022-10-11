@@ -1,1 +1,1 @@
-from .Challenge import CMagChallenge
+from .challenge import CMagChallenge
