@@ -1,3 +1,14 @@
+# Exception event decorator
+def ExceptionDecorator(exception, handler):
+    def decorator(function):
+        def wrapper(self, *args, **kwargs):
+            try:
+                return function(self, *args, **kwargs)
+            except exception as e:
+                handler(self, e)
+        return wrapper
+    return decorator
+
 # base dummy class
 class ChallengeFailed(Exception):
     pass
