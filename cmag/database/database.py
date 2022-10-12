@@ -1,8 +1,14 @@
 from peewee import SqliteDatabase
 from .base_model import CMagBaseModel, CMagDatabaseProxy
+from .exceptions import *
 
 class CMagDatabase:
-    
+
+    def exception_handler(self, e):
+        # TODO:
+        pass
+
+    @ExceptionDecorator(CMagDatabaseFailed, exception_handler)
     def __init__(self, path: str):
         self._database = SqliteDatabase(path)
         CMagDatabaseProxy.initialize(self._database)
@@ -17,8 +23,10 @@ class CMagDatabase:
     @property
     def database(self): return self._database
 
+    @ExceptionDecorator(CMagDatabaseOpenError, exception_handler)
     def open(self):
         self.database.connect()
 
+    @ExceptionDecorator(CMagDatabaseCloseError, exception_handler)
     def close(self):
         self.database.close()

@@ -10,7 +10,7 @@ from .exceptions import *
 
 class CMagChallengeManager:
 
-    def exception_handler(self):
+    def exception_handler(self, e):
         # TODO:
         pass
 
