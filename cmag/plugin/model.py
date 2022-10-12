@@ -3,7 +3,7 @@ from cmag.database.base_model import CMagBaseModel
 
 class CMagPluginModel(CMagBaseModel):
     id = IntegerField(primary_key=True)
-    impfrom = CharField()
+    callname = CharField(unique=True)
+    impfrom = CharField(unique=True)
     options = CharField()
     enabled = BooleanField()
-    

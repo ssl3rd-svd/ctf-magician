@@ -12,5 +12,6 @@ class HelloPlugin(CMagPlugin):
     optdef = HelloPluginOptions
 
     def run(self, *args, **kwargs):
-        print(f"Hello CTF-Magician{self.options.world}")
-        print(f"hello: {self.options}")
+        print("WHAAA")
+        self.log.info(f"Hello CTF-Magician{self.options.world}")
+        self.log.warn(f"hello: {self.options}")
