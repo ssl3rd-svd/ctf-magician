@@ -1,0 +1,1 @@
+from cmag.interface.main import start; start()

@@ -3,6 +3,7 @@ import typing
 if typing.TYPE_CHECKING:
     from typing import Any, Dict, List, Optional
 
+import peewee
 from pathlib import Path
 from shutil import copyfile
 from cmag.file import CMagFile
@@ -21,20 +22,29 @@ class CMagFileManager(CMagFileManagerImpl):
             self.log.error(f"wrong path passed: {dstpath}")
             return None
 
-        self.abspath(dstpath).touch()
-
-        self.log.debug(f"file {dstpath} created.")
-
-        record = self.create_file_record(
-            root=0,
-            type=CMagFileManager.TYPE_FILE,
-            path=dstpath,
-            challenge=self.challenge.record
-        )
+        try:
+            record = self.create_file_record(
+                root=0,
+                type=CMagFileManager.TYPE_FILE,
+                path=dstpath,
+                challenge=self.challenge.record
+            )
+        except peewee.IntegrityError:
+            self.log.error(f"{dstpath} already exists.")
+            return None
 
         if not record:
             self.log.critical(f"unknown error occured while creating file record.")
             return None
+
+        try:
+            self.abspath(dstpath).touch()
+        except OSError as exc:
+            record.delete_instance()
+            self.log.error(exc)
+            return None
+            
+        self.log.debug(f"file {dstpath} created.")
 
         return CMagFile(self.project, self.challenge, record.id)
 
@@ -49,21 +59,31 @@ class CMagFileManager(CMagFileManagerImpl):
         else:
             dest = source.name
 
-        absdest = self.abspath(dest)
-        copyfile(source, absdest)
-
-        self.log.debug(f"file {source} copied to {absdest}")
-
-        record = self.create_file_record(
-            root=0,
-            type=CMagFileManager.TYPE_FILE,
-            path=dest,
-            challenge=self.challenge.record
-        )
+        try:
+            record = self.create_file_record(
+                root=0,
+                type=CMagFileManager.TYPE_FILE,
+                path=dest,
+                challenge=self.challenge.record
+            )
+        except peewee.IntegrityError:
+            self.log.error(f"{dest} already exists.")
+            return None
 
         if not record:
             self.log.critical(f"unknown error occured while creating file record.")
             return None
+
+        absdest = self.abspath(dest)
+
+        try:
+            copyfile(source, absdest)
+        except OSError as exc:
+            record.delete_instance()
+            self.log.error(exc)
+            return None
+
+        self.log.debug(f"file {source} copied to {absdest}")
 
         return CMagFile(self.project, self.challenge, record.id)
 

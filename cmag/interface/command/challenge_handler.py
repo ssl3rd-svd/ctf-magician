@@ -1,98 +1,205 @@
-from argparse import ArgumentParser, _SubParsersAction
+from argparse import ArgumentParser, _SubParsersAction, Namespace
 from pathlib import Path
+from .utils import open_project, open_challenge
+
 
 # challenge ... {subcommand}
 
 def challenge_handler(args):
-    pass
+    raise NotImplementedError
 
 def challenge_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_handler)
-    parser.add_argument("-p", "--project", type=Path, default=Path("."))
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-n", "--name", type=str)
+    group.add_argument("-i", "--id", type=int)
+
 
 # challenge ... add ...
 
 def challenge_add_handler(args):
-    pass
+    project = open_project(args)
+    challenge = project.challenge_manager.add_challenge(args.name)
+    if not challenge:
+        print("failed.")
+    else:
+        print("done.")
 
 def challenge_add_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_add_handler)
     parser.add_argument("name")
 
+
 # challenge ... list ...
 
 def challenge_list_handler(args):
-    pass
+    
+    from termcolor import colored
+    
+    project = open_project(args)
+    if not project:
+        print("failed.")
+        return -1
+    
+    challenges = project.challenge_manager.list_challenges()
+    
+    print(colored(f"{'id':4} | name", attrs=['bold']))
+    for challenge in challenges:
+        print(f"{str(challenge.id):4} | {challenge.name}")
+
+    return 0
 
 def challenge_list_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_list_handler)
     parser.add_argument("--with-files", action='store_true')
 
+
 # challenge ... info ...
 
 def challenge_info_handler(args):
-    pass
+    
+    project = open_project(args)
+    if not project:
+        print("failed.")
+        return -1
+
+    if args.id:
+        challenge = project.challenge_manager.get_challenge(args.id)
+    elif args.name:
+        challenge = project.challenge_manager.get_challenge_by_name(args.name)
+    else:
+        print("failed.")
+        return -1
+
+    if not challenge:
+        print("failed.")
+        return -1
+
+    # TODO: improve this.
+    print(challenge)
+
+    return 0
 
 def challenge_info_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_info_handler)
-    parser.add_argument("-n", "--name", type=str)
-    parser.add_argument("-i", "--id", type=int)
+
 
 # challenge ... remove ...
 
 def challenge_remove_handler(args):
-    pass
+
+    project = open_project(args)
+    if not project:
+        print("failed.")
+        return -1
+
+    if args.id:
+        challenge = project.challenge_manager.get_challenge(args.id)
+    elif args.name:
+        challenge = project.challenge_manager.get_challenge_by_name(args.name)
+    else:
+        raise Exception
+
+    if not challenge:
+        print("failed.")
+        return -1
+
+    if not project.challenge_manager.remove_challenge(challenge.id):
+        print("failed.")
+        return -1
+
+    print("done.")
+    return 0
 
 def challenge_remove_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_remove_handler)
-    parser.add_argument("-n", "--name", type=str)
-    parser.add_argument("-i", "--id", type=int)
+
 
 # challenge ... file ... {subcommand}
 
 def challenge_file_handler(args):
-    pass
+    raise NotImplementedError
 
 def challenge_file_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_file_handler)
-    parser.add_argument("challenge", type=int)
+
 
 # challenge ... file ... create ...
 
 def challenge_file_create_handler(args):
-    pass
+    
+    if not (challenge := open_challenge(args)):
+        print("failed.")
+        return -1
+
+    if not (file := challenge.create_file(args.path)):
+        print("failed.")
+        return -1
+
+    print(file.path)
+    return 0
 
 def challenge_file_create_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_file_create_handler)
-    parser.add_argument("name")
+    parser.add_argument("path", type=Path)
+
 
 # challenge ... file ... add ...
 
 def challenge_file_add_handler(args):
-    pass
+    
+    if not (challenge := open_challenge(args)):
+        print("failed.")
+        return -1
+
+    if not (file := challenge.add_file(args.path, args.dest)):
+        print("failed.")
+        return -1
+
+    print(file.path)
+    return 0
 
 def challenge_file_add_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_file_add_handler)
-    parser.add_argument("file", type=Path)
+    parser.add_argument("path", type=Path)
     parser.add_argument("-d", "--dest", type=Path)
+
 
 # challenge ... file ... list ...
 
 def challenge_file_list_handler(args):
-    pass
+    
+    from termcolor import colored
+
+    if not (challenge := open_challenge(args)):
+        print("failed.")
+        return -1
+
+    files = challenge.list_files()
+
+    print(colored(f"{'id':4} | name", attrs=['bold']))
+    for file in files:
+        print(f"{str(file.id):4} | {file.path}")
+
+    return 0
 
 def challenge_file_list_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_file_list_handler)
 
+
 # challenge ... file ... remove ...
 
 def challenge_file_remove_handler(args):
-    pass
+    
+    if not (challenge := open_challenge(args)):
+        print("failed.")
+        return -1
+
+    challenge.remove_file()
 
 def challenge_file_remove_argparse(parser: ArgumentParser):
     parser.set_defaults(func=challenge_file_remove_handler)
-    parser.add_argument("-p", "--path", type=Path)
-    parser.add_argument("-i", "--id", type=int)
+
 
 # factory
 

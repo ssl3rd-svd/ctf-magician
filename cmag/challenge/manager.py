@@ -4,6 +4,7 @@ import typing
 if typing.TYPE_CHECKING:
     from typing import Any, Dict, List, Optional
 
+import peewee
 from cmag.challenge.manager_impl import CMagChallengeManagerImpl
 from cmag.challenge.model import CMagChallengeModel
 from cmag.challenge.challenge import CMagChallenge
@@ -15,8 +16,13 @@ class CMagChallengeManager(CMagChallengeManagerImpl):
 
     def add_challenge(self, name: str) -> Optional[CMagChallenge]:
 
-        if not (record := self.create_challenge_record(name=name)):
-            self.log.error(f"failed to create challenge record: {name}")
+        try:
+            if not (record := self.create_challenge_record(name=name)):
+                self.log.error(f"failed to create challenge record: {name}")
+                return None
+
+        except peewee.IntegrityError:
+            self.log.error(f"challenge {name} exists.")
             return None
 
         return CMagChallenge(self.project, record.id)
@@ -40,10 +46,11 @@ class CMagChallengeManager(CMagChallengeManagerImpl):
     def list_challenges(self) -> List[CMagChallenge]:
         return [CMagChallenge(self.project, record.id) for record in self.select_challenge_records()]
 
-    def remove_challenge(self, id: int) -> int:
+    def remove_challenge(self, id: int) -> bool:
         
         if not (record := self.check_challenge_record_exists_by_id(id)):
             self.log.error(f"failed to get challenge record: {id}")
-            return None
+            return False
 
         record.delete_instance()
+        return True

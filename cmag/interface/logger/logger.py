@@ -13,13 +13,22 @@ from logging import (
     DEBUG, INFO, WARN, WARNING, ERROR, CRITICAL
 )
 
+def make_format(color='', attrs=[]):
+    ret  = ''
+    ret += colored('[', color='grey', attrs=['dark'])
+    ret += colored('%(levelname)s', color=color, attrs=attrs)
+    ret += ':%(name)s'
+    ret += colored(']', color='grey', attrs=['dark'])
+    ret += ' %(msg)s'
+    return ret
+
 class CMagStreamFormatter(Formatter):
 
-    dbg_fmt  = f"[{colored('D', color='white',  attrs=['bold'])}] %(msg)s"
-    info_fmt = f"[{colored('i', color='cyan',   attrs=['bold'])}] %(msg)s"
-    warn_fmt = f"[{colored('!', color='yellow', attrs=['bold'])}] %(msg)s"
-    err_fmt  = f"[{colored('-', color='red',    attrs=['bold'])}] %(msg)s"
-    crit_fmt = f"{colored(' CRITICAL ', color='red', attrs=['bold', 'reverse'])} %(msg)s"
+    dbg_fmt  = make_format(color='white',  attrs=['bold'])
+    info_fmt = make_format(color='cyan',   attrs=['bold'])
+    warn_fmt = make_format(color='yellow', attrs=['bold'])
+    err_fmt  = make_format(color='red',    attrs=['bold'])
+    crit_fmt = make_format(color='red',    attrs=['bold', 'reverse'])
 
     def __init__(self):
         super().__init__(fmt="%(levelno)d: %(msg)s", datefmt=None, style='%')  

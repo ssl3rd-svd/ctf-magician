@@ -5,6 +5,7 @@ if typing.TYPE_CHECKING:
     from cmag.plugin import CMagPlugin
 
 import json
+import peewee
 from playhouse.shortcuts import model_to_dict
 from cmag.plugin.model import CMagPluginModel
 from cmag.plugin.manager_impl import CMagPluginManagerImpl
@@ -40,12 +41,16 @@ class CMagPluginManager(CMagPluginManagerImpl):
             self.log.error(f"plugin doesn't have callname.")
             return None
 
-        record = self.create_plugin_record(
-            callname = plugin.callname,
-            impfrom = impfrom,
-            options = plugin.options.to_json(),
-            enable = enable
-        )
+        try:
+            record = self.create_plugin_record(
+                callname = plugin.callname,
+                impfrom = impfrom,
+                options = plugin(self.project, options).options.to_json(),
+                enabled = enable
+            )
+        except peewee.IntegrityError:
+            self.log.error(f"plugin exists: {plugin.callname}")
+            return None
 
         if not record:
             self.log.critical(f"something wrong with database.")
@@ -81,14 +86,16 @@ class CMagPluginManager(CMagPluginManagerImpl):
         if not (record := self.check_plugin_record_exists_by_id(id)):
             self.log.error(f"plugin record not found: {id}")
             return False
-        record.update(enable=True).execute()
+        with self.project.db as database:
+            CMagPluginModel.update(enabled=True).where(CMagPluginModel.id == id).execute()
         return True
 
     def disable_plugin(self, id: int) -> bool:
         if not (record := self.check_plugin_record_exists_by_id(id)):
             self.log.error(f"plugin record not found: {id}")
             return False
-        record.update(enable=False).execute()
+        with self.project.db as database:
+            CMagPluginModel.update(enabled=False).where(CMagPluginModel.id == id).execute()
         return True
 
     def get_plugin_options(self, id: int) -> Optional[str]:
@@ -101,7 +108,8 @@ class CMagPluginManager(CMagPluginManagerImpl):
         if not (record := self.check_plugin_record_exists_by_id(id)):
             self.log.error(f"plugin record not found: {id}")
             return False
-        record.update(options=options).execute()
+        with self.project.db as database:
+            CMagPluginModel.update(options=options).where(CMagPluginModel.id == id).execute()
         return True
 
     def load_plugin(self, id: int) -> Optional[CMagPlugin]:
