@@ -1,0 +1,1 @@
+from .CTFdPlugin import *

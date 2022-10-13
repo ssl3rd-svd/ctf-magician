@@ -8,10 +8,9 @@ class HelloPluginOptions:
 
 class HelloPlugin(CMagPlugin):
     
-    callname = 'cmag.plugin.hello'
+    callname = 'SampleHello'
     optdef = HelloPluginOptions
 
     def run(self, *args, **kwargs):
-        print("WHAAA")
         self.log.info(f"Hello CTF-Magician{self.options.world}")
         self.log.warn(f"hello: {self.options}")
