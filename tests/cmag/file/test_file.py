@@ -34,26 +34,25 @@ def filemanager(tmp_path_str) :
     challmanager.add_challenge('a')
     challenge = CMagChallenge(project, 1)
     return CMagFileManager(project, challenge)
-    
-    
+
 class Test01FileManager:
     def test01_isinstance(self, filemanager) :
-        assert isinstance(filemanager, CMagFileManager) is True 
-    
-    def test01_abs_path(self, filemanager, tmp_path) :        
+        assert isinstance(filemanager, CMagFileManager) is True
+
+    def test01_abs_path(self, filemanager, tmp_path) :
         abspath = filemanager.abspath('./')
-        assert abspath.is_absolute() is True 
-        abspath = filemanager.abspath(tmp_path) 
         assert abspath.is_absolute() is True
-        
+        abspath = filemanager.abspath(tmp_path)
+        assert abspath.is_absolute() is True
+
     def test01_rel_path(self, filemanager, tmp_path) :
         relpath = filemanager.relpath('./')
         assert relpath == Path('./')
-        relpath = filemanager.relpath(tmp_path) 
+        relpath = filemanager.relpath(tmp_path)
         assert relpath is None
-        
+
     def test01_make_file(self, filemanager, tmp_path) :
-        randomfiles = make_random_files_at(tmp_path) 
+        randomfiles = make_random_files_at(tmp_path)
         assert filemanager.create_file(tmp_path) is None
         for _ in range(random.randrange(1, 5)) : #create_file
             file_name = secrets.token_hex(16)
@@ -64,31 +63,30 @@ class Test01FileManager:
             assert (filemanager.path/p.name).is_file() is True
             with open((filemanager.path/p.name), 'rb') as f:
                 assert h == hashlib.md5(f.read()).digest()
-    
+
     def test01_doubly_add(self, filemanager, tmp_path) :
         p, d, h = make_random_file_at(tmp_path)
         filemanager.add_file(p)
         with pytest.raises(Exception) as IntegrityError :
             filemanager.add_file(p)
-            
+
     def test01_doubly_create(self, filemanager) :
         filemanager.create_file('a')
         with pytest.raises(Exception) as IntegrityError :
             filemanager.create_file('a')
-        
+
     def test01_not_exist_get(self, filemanager, tmp_path) :
         filemanager.create_file('a')
-        filemanager.get_file_by_id(1)
+        filemanager.get_file_record_by_id(1)
         with pytest.raises(Exception) as CMagFileModelDoesNotExist :
-            filemanager.get_file_by_id(2) 
-            filemanager.get_file_by_path(tmp_path / 'b') 
-             
+            filemanager.get_file_record_by_id(2)
+            filemanager.get_file_by_path(tmp_path / 'b')
+
     def test01_list(self, filemanager) :
         from string import ascii_lowercase
         for c in ascii_lowercase:
             filemanager.create_file(c)
-        assert filemanager.list_files() == dict(zip(range(1, len(ascii_lowercase) + 1), ascii_lowercase))
-
+        assert [file.path for file in filemanager.list_files()] == list(ascii_lowercase)
 
 def make_random_files_at(tmp_path: Path):
     ret = []

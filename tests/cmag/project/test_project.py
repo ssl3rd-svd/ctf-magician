@@ -1,9 +1,13 @@
 import pytest
+import os
+import sys
+from logging import Logger
 
 from cmag.project import CMagProject
 from cmag.database import CMagDatabase
-from cmag.challenge.manager import CMagChallengeManager, CMagChallenge
+from cmag.interface.logger import CMagLogger
 from cmag.plugin.manager import CMagPluginManager
+from cmag.challenge.manager import CMagChallengeManager, CMagChallenge
 
 class Test00CMagProjectInit:
     def test00_init(self, tmp_path):
@@ -23,22 +27,34 @@ class Test00CMagProjectInit:
         # this makes project directory at "."
         project = CMagProject(empty_string)
         assert project.path.exists() is True
+        os.remove('project.db')
 
+    def test00_init_log_log_to_file(self, tmp_path):
+        log_file = tmp_path / 'test00_init_log_to_file.log'
+        project = CMagProject(tmp_path, log_to_file=log_file)
+        assert log_file.is_file() is True
 
 class Test01ProjectDB:
     def test01_db_isinstance(self, tmp_path):
         project = CMagProject(tmp_path)
         assert isinstance(project.db, CMagDatabase) is True
-        assert (project.path / "project.db").is_file() is True
+        assert (project.path / 'project.db').is_file() is True
 
 @pytest.fixture
 def project(tmp_path):
     return CMagProject(tmp_path)
 
-class Test02ProjectChallengeManager:
-    def test02_challenge_manager_isinstance(self, project):
-        assert isinstance(project.challenge_manager, CMagChallengeManager) is True
+class Test02Logger:
+    def test02_logger_isinstance(self, project):
+        assert isinstance(project.logger, CMagLogger) is True
 
-    def test02_challenge_manager_add_get(self, project):
-        assert isinstance(project.add_challenge('foo'), CMagChallenge) is True
-        assert project.get_challenge_by_id(1).id == project.get_challenge_by_name('foo').id
+    def test02_log_isinstance(self, project):
+        assert isinstance(project.log, Logger) is True
+
+class Test03PluginManager:
+    def test02_plugin_manager_isinstance(self, project):
+        assert isinstance(project.plugin_manager, CMagPluginManager) is True
+
+class Test04ProjectChallengeManager:
+    def test04_challenge_manager_isinstance(self, project):
+        assert isinstance(project.challenge_manager, CMagChallengeManager) is True

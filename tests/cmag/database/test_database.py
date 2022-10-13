@@ -3,6 +3,7 @@ from peewee import *
 
 from cmag.database import CMagDatabase
 from cmag.database.base_model import CMagBaseModel
+from cmag.database.exceptions import CMagDatabaseFailed
 
 @pytest.fixture
 def db_path(tmp_path):
@@ -29,9 +30,8 @@ class Test00CMagDatabaseInit:
 
     def test00_init_not_file_path(self, tmp_path):
         assert tmp_path.is_dir() is True
-        with pytest.raises(Exception):
+        with pytest.raises(Exception) as CMagDatabaseFailed:
             cmag_db = CMagDatabase(tmp_path)
-            # CMagTestModel.create_table() -> peewee.OperationalError: unable to open database file
 
     def test00_init_doubly_open(self, cmag_db):
         cmag_db.open()
