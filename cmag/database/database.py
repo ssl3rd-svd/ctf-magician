@@ -1,13 +1,12 @@
 from peewee import SqliteDatabase
 from pathlib import Path
-from .base_model import CMagBaseModel, CMagDatabaseProxy
-from .exceptions import CMagDatabaseFailed
+from .base_model import CMagDatabaseProxy
 
 class CMagDatabase:
 
     def __init__(self, path: str):
-        if Path(path).is_dir() is True:
-            raise CMagDatabaseFailed
+        if Path(path).is_dir():
+            raise IsADirectoryError
         self._database = SqliteDatabase(path)
         CMagDatabaseProxy.initialize(self._database)
 

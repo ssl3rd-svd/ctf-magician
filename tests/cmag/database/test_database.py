@@ -30,8 +30,9 @@ class Test00CMagDatabaseInit:
 
     def test00_init_not_file_path(self, tmp_path):
         assert tmp_path.is_dir() is True
-        with pytest.raises(Exception) as CMagDatabaseFailed:
+        with pytest.raises(IsADirectoryError):
             cmag_db = CMagDatabase(tmp_path)
+            assert not cmag_db
 
     def test00_init_doubly_open(self, cmag_db):
         cmag_db.open()
