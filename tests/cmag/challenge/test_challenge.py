@@ -34,8 +34,7 @@ class Test01ChallengeManager:
 
     def test01_doubly_add(self, challmanager):
         challmanager.add_challenge('a')
-        with pytest.raises(Exception) as IntegrityError:
-            challmanager.add_challenge('a')
+        challmanager.add_challenge('a')
 
     def test01_not_exist_get(self, challmanager):
         challmanager.add_challenge('a')

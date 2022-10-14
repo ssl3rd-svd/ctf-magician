@@ -36,6 +36,8 @@ class Test00CMagDatabaseInit:
 
     def test00_init_doubly_open(self, cmag_db):
         cmag_db.open()
+        with pytest.raises(Exception) as OperatinalError :
+            cmag_db.open()
 
     def test00_init_doubly_close(self, db_path):
         cmag_db = CMagDatabase(db_path)
