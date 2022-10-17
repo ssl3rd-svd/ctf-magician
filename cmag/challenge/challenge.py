@@ -4,9 +4,11 @@ if typing.TYPE_CHECKING:
     from typing import Any, Dict, List, Optional
 
 from cmag.challenge.challenge_impl import CMagChallengeImpl
+from .exceptions import CMagChallListError, Exception, CMagChallInitError, CMagChallCreateError, CMagChallAddError, CMagChallGetByPathError, CMagChallGetError, CMagChallRemoveError
 
 class CMagChallenge(CMagChallengeImpl):
-
+    
+    @Exception(CMagChallInitError)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -21,20 +23,26 @@ class CMagChallenge(CMagChallengeImpl):
     def description(self) -> str:
         return self.record.name
 
+    @Exception(CMagChallCreateError)
     def create_file(self, *args, **kwargs):
         return self.file_manager.create_file(*args, **kwargs)
 
+    @Exception(CMagChallAddError)
     def add_file(self, *args, **kwargs):
         return self.file_manager.add_file(*args, **kwargs)
 
+    @Exception(CMagChallGetError)
     def get_file(self, *args, **kwargs):
         return self.file_manager.get_file(*args, **kwargs)
 
+    @Exception(CMagChallGetByPathError)
     def get_file_by_path(self, *args, **kwargs):
         return self.file_manager.get_file_by_path(*args, **kwargs)
 
+    @Exception(CMagChallListError)
     def list_files(self, *args, **kwargs):
         return self.file_manager.list_files(*args, **kwargs)
 
+    @Exception(CMagChallRemoveError)
     def remove_file(self, *args, **kwargs):
         return self.file_manager.remove_file(*args, **kwargs)
