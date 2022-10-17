@@ -4,11 +4,11 @@ if typing.TYPE_CHECKING:
     from typing import Any, Dict, List, Optional
 
 from cmag.challenge.challenge_impl import CMagChallengeImpl
-from .exceptions import CMagChallListError, Exception, CMagChallInitError, CMagChallCreateError, CMagChallAddError, CMagChallGetByPathError, CMagChallGetError, CMagChallRemoveError
+from .exceptions import raise_except_decorate, CMagChallListError, CMagChallInitError, CMagChallCreateError, CMagChallAddError, CMagChallGetByPathError, CMagChallGetError, CMagChallRemoveError
 
 class CMagChallenge(CMagChallengeImpl):
     
-    @Exception(CMagChallInitError)
+    @raise_except_decorate(CMagChallInitError)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -23,26 +23,26 @@ class CMagChallenge(CMagChallengeImpl):
     def description(self) -> str:
         return self.record.name
 
-    @Exception(CMagChallCreateError)
+    @raise_except_decorate(CMagChallCreateError)
     def create_file(self, *args, **kwargs):
         return self.file_manager.create_file(*args, **kwargs)
 
-    @Exception(CMagChallAddError)
+    @raise_except_decorate(CMagChallAddError)
     def add_file(self, *args, **kwargs):
         return self.file_manager.add_file(*args, **kwargs)
 
-    @Exception(CMagChallGetError)
+    @raise_except_decorate(CMagChallGetError)
     def get_file(self, *args, **kwargs):
         return self.file_manager.get_file(*args, **kwargs)
 
-    @Exception(CMagChallGetByPathError)
+    @raise_except_decorate(CMagChallGetByPathError)
     def get_file_by_path(self, *args, **kwargs):
         return self.file_manager.get_file_by_path(*args, **kwargs)
 
-    @Exception(CMagChallListError)
+    @raise_except_decorate(CMagChallListError)
     def list_files(self, *args, **kwargs):
         return self.file_manager.list_files(*args, **kwargs)
 
-    @Exception(CMagChallRemoveError)
+    @raise_except_decorate(CMagChallRemoveError)
     def remove_file(self, *args, **kwargs):
         return self.file_manager.remove_file(*args, **kwargs)

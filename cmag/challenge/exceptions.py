@@ -65,12 +65,23 @@ class CMagChallMgrDeleteError(CMagChallMgrFailed): ...
 class CMagChallModelError(CMagChallModelFailed): ...
 
 # Exception raise decorator
-def Exception(exception):
+def raise_except_decorate(exception):
     def decorator(function):
         def wrapper(self, *args, **kwargs):
             try:
                 return function(self, *args, **kwargs)
             except:
                 raise exception
+        return wrapper
+    return decorator
+
+# Exception handler decorator
+def handle_except_decorate(handler):
+    def decorator(function):
+        def wrapper(self, *args, **kwargs):
+            try:
+                return function(self, *args, **kwargs)
+            except Exception as e:
+                return handler(self, e)
         return wrapper
     return decorator
