@@ -67,13 +67,11 @@ class Test01FileManager:
     def test01_doubly_add(self, filemanager, tmp_path) :
         p, d, h = make_random_file_at(tmp_path)
         filemanager.add_file(p)
-        with pytest.raises(Exception) as IntegrityError :
-            filemanager.add_file(p)
+        filemanager.add_file(p)
 
     def test01_doubly_create(self, filemanager) :
         filemanager.create_file('a')
-        with pytest.raises(Exception) as IntegrityError :
-            filemanager.create_file('a')
+        filemanager.create_file('a')
 
     def test01_not_exist_get(self, filemanager, tmp_path) :
         filemanager.create_file('a')
