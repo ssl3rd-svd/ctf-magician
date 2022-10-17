@@ -1,8 +1,11 @@
 from __future__ import annotations
 import typing
 
+from cmag.challenge.exceptions import CMagChallFailed, CMagChallImplFailed, CMagChallMgrImplFailed, CMagChallModelFailed
+
 if typing.TYPE_CHECKING:
     from typing import Any, Dict, List, Optional
+    from cmag.project import CMagProject
 
 import peewee
 from cmag.challenge.manager_impl import CMagChallengeManagerImpl
@@ -21,11 +24,22 @@ class CMagChallengeManager(CMagChallengeManagerImpl):
                 self.log.error(f"failed to create challenge record: {name}")
                 return None
 
+            return CMagChallenge(self.project, record.id)
         except peewee.IntegrityError:
             self.log.error(f"challenge {name} exists.")
-            return None
-
-        return CMagChallenge(self.project, record.id)
+        except CMagChallMgrImplFailed as e:
+            self.log.error(e)
+            # TODO: do something
+        except CMagChallFailed as e:
+            self.log.error(e)
+            # TODO: do something
+        except CMagChallImplFailed as e:
+            self.log.error(e)
+            # TODO: do something
+        except CMagChallModelFailed as e:
+            self.log.error(e)
+            # TODO: do something
+        return None
 
     def get_challenge(self, id: int) -> Optional[CMagChallenge]:
 
