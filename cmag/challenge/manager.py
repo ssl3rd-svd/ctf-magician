@@ -11,7 +11,7 @@ import peewee
 from cmag.challenge.manager_impl import CMagChallengeManagerImpl
 from cmag.challenge.model import CMagChallengeModel
 from cmag.challenge.challenge import CMagChallenge
-from .exceptions import handle_except_decorate
+from .exceptions import CMagChallMgrFailed, handle_except_decorate
 
 class CMagChallengeManager(CMagChallengeManagerImpl):
 
@@ -19,17 +19,23 @@ class CMagChallengeManager(CMagChallengeManagerImpl):
         return f"<CMagChallengeManager challenges={len(self.list_challenges())}>"
 
     def handle_exception(self, e):
-        # TODO:
-        if e is peewee.IntegrityError:
+        # TODO: handle exception at challenge layer
+        error = e.__class__
+        if issubclass(error, peewee.IntegrityError):
             self.log.error(f"challenge file already exists.")
-        elif e is CMagChallMgrImplFailed:
+            raise CMagChallMgrFailed
+        elif issubclass(error, CMagChallMgrImplFailed):
             self.log.error(e)
-        elif e is CMagChallFailed:
+            raise CMagChallMgrFailed
+        elif issubclass(error, CMagChallFailed):
             self.log.error(e)
-        elif e is CMagChallImplFailed:
+            raise CMagChallMgrFailed
+        elif issubclass(error, CMagChallImplFailed):
             self.log.error(e)
-        elif e is CMagChallModelFailed:
+            raise CMagChallMgrFailed
+        elif issubclass(error, CMagChallModelFailed):
             self.log.error(e)
+            raise CMagChallMgrFailed
 
     @handle_except_decorate(handle_exception)
     def add_challenge(self, name: str) -> Optional[CMagChallenge]:
