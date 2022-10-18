@@ -1,7 +1,11 @@
 from argparse import ArgumentParser, _SubParsersAction, Namespace
 from pathlib import Path
+
+from cmag.project.exceptions import ProjectFailed
+from cmag.challenge.exceptions import ChallFailed
 from .utils import open_project, open_challenge
 
+import logging
 
 # challenge ... {subcommand}
 
@@ -18,10 +22,12 @@ def challenge_argparse(parser: ArgumentParser):
 # challenge ... add ...
 
 def challenge_add_handler(args):
-    project = open_project(args)
-    challenge = project.challenge_manager.add_challenge(args.name)
-    if not challenge:
-        print("failed.")
+    try:
+        project = open_project(args)
+        challenge = project.challenge_manager.add_challenge(args.name)
+    except (ProjectFailed, ChallFailed) as e:
+        logging.exception(e)
+        print("failed")
     else:
         print("done.")
 
